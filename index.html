@@ -121,7 +121,7 @@
         <div class="col-lg-3 col-md-6">
           <div class="count-box">
             <i class="bi bi-emoji-smile"></i>
-            <span data-purecounter-start="0" data-purecounter-end="22" data-purecounter-duration="1" class="purecounter"></span>
+            <span data-purecounter-start="0" data-purecounter-end="12" data-purecounter-duration="1" class="purecounter"></span>
             <p><a href="https://github.com/logesh-works">clients</a></p>
           </div>
         </div>
@@ -129,7 +129,7 @@
         <div class="col-lg-3 col-md-6 mt-5 mt-md-0">
           <div class="count-box">
             <i class="bi bi-journal-richtext"></i>
-            <span data-purecounter-start="0" data-purecounter-end="78" data-purecounter-duration="1" class="purecounter"></span>
+            <span data-purecounter-start="0" data-purecounter-end="34" data-purecounter-duration="1" class="purecounter"></span>
             <p><a href="https://github.com/logesh-works?tab=repositories">projects</a></p>
           </div>
         </div>
@@ -145,7 +145,7 @@
         <div class="col-lg-3 col-md-6 mt-5 mt-lg-0">
           <div class="count-box">
             <i class="bi bi-award"></i>
-            <span data-purecounter-start="0" data-purecounter-end="4" data-purecounter-duration="1" class="purecounter"></span>
+            <span data-purecounter-start="0" data-purecounter-end="2" data-purecounter-duration="1" class="purecounter"></span>
             <p><a href="https://github.com/logesh-works">Awards</a></p>
           </div>
         </div>
@@ -567,7 +567,7 @@
   </section><!-- End Resume Section -->
 
   <!-- ======= Services Section ======= -->
-  <section id="services" class="services">
+  <!-- <section id="services" class="services">
     <div class="container">
       <h1>Recent GitHub Push Activity</h1>
       <div class="activity-container" id="activity-container"></div>
@@ -617,7 +617,92 @@ fetch(`https://api.github.com/users/${githubUsername}/events`, {
 
     </div>
   </section><!-- End Services Section -->
+ -->
+ <section id="services" class="services">
+  <div class="container">
 
+    <div class="section-title">
+      <h2>Activities</h2>
+      <p>Recent GitHub PushEvents</p>
+    </div>
+
+    <!-- Add a new div for the GitHub activity section -->
+    <div class="row" id="githubActivitySection">
+      <!-- GitHub activity will be inserted here -->
+    </div>
+
+  </div>
+</section>
+
+<script>
+  // Function to fetch recent GitHub activity
+  async function getGitHubActivity(username) {
+    try {
+      const response = await fetch(`https://api.github.com/users/${username}/events`);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  // Function to create a card for GitHub activity
+  function createGitHubActivityCard(repoName, description, daysAgo, repoUrl) {
+    const activityCard = `
+      <div class="col-lg-4 col-md-6 d-flex align-items-stretch mt-4">
+        <a href="${repoUrl}" target="_blank" rel="noopener noreferrer" class="github-card-link">
+          <div class="icon-box">
+            <div class="icon"><i class="bx bx-world"></i></div>
+            <h4>${repoName}</h4>
+            <p>${description ? description : "No description available."}</p>
+            <p>Last Activity: ${daysAgo} days ago</p>
+          </div>
+        </a>
+      </div>
+    `;
+
+    return activityCard;
+  }
+
+  // Function to calculate the number of days ago
+  function daysAgoFromDate(dateString) {
+    const activityDate = new Date(dateString);
+    const currentDate = new Date();
+    const timeDiff = currentDate.getTime() - activityDate.getTime();
+    const daysAgo = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+    return daysAgo;
+  }
+
+  // Function to add GitHub activity cards to the HTML page
+  async function displayGitHubActivity(username) {
+    const activityData = await getGitHubActivity(username);
+    const container = document.getElementById("githubActivitySection");
+    const displayedRepos = new Set(); // To track displayed repositories
+    let displayedCount = 0; // To limit the number of displayed updates to 5
+
+    for (const activity of activityData) {
+      if (activity.type === "PushEvent" && !displayedRepos.has(activity.repo.name)) {
+        const repoName = activity.repo.name;
+        const description = "@logesh-works";
+        const daysAgo = daysAgoFromDate(activity.created_at);
+        const repoUrl = `https://github.com/${activity.repo.name}`;
+        const activityCard = createGitHubActivityCard(repoName, description, daysAgo, repoUrl);
+        container.innerHTML += activityCard;
+
+        displayedRepos.add(activity.repo.name);
+        displayedCount++;
+
+        
+      }
+    }
+  }
+
+  // Call the function to display the GitHub activity cards
+  const githubUsername = "logesh-works";
+  displayGitHubActivity(githubUsername);
+</script>
+
+</section><!-- End Services Section -->
   <!-- ======= Portfolio Section ======= -->
   <section id="portfolio" class="portfolio">
     <div class="container">
@@ -838,7 +923,7 @@ fetch(`https://api.github.com/users/${githubUsername}/events`, {
     <!-- You can delete the links only if you purchased the pro version. -->
     <!-- Licensing information: https://bootstrapmade.com/license/ -->
     <!-- Purchase the pro version with working PHP/AJAX contact form: https://bootstrapmade.com/personal-free-resume-bootstrap-template/ -->
-    Designed by <a href="https://github.com/logesh-works">logesh-works</a>
+    Designed by <a href="https://linktr.ee/me_logi">Logesh</a>
   </div>
 
   <!-- Vendor JS Files -->
