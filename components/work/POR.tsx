@@ -13,7 +13,7 @@ const POR = () => {
           position="Developer"
           startDate="2024"
           endDate="2025"
-          description="I completed a project called GeneHR, which is designed for use in the medical field to manage health-related information."
+          description="I completed a project called GenEHR, which is designed for use in the medical field to manage health-related information."
         />
 
         <Position
