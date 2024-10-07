@@ -32,7 +32,7 @@ const Achievements = () => {
   return (
     <section className="flex flex-wrap gap-10 justify-center">
       {activities.map((activity, index) => (
-        <a href={activity.url}>
+        <a href={activity.url} key={index} >
           <Achievement
           key={index} // Use a unique key if possible
           logo="/logos/repo.png" // Adjust this based on your activity data
