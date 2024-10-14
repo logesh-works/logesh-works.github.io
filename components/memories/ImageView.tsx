@@ -13,6 +13,7 @@ const ImageView = () => {
     '/images/gal/5.jpg',
     '/images/gal/6.jpg',
     '/images/gal/7.jpg',
+    '/images/gal/8.jpg',
   ];
 
   const openImage = (image: string) => {
