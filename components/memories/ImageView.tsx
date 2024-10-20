@@ -6,10 +6,10 @@ const ImageView = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const images = [
-    '/images/gal/1.jpg',
-    '/images/gal/2.jpg',
-    '/images/gal/3.jpg',
-    '/images/gal/4.jpg',
+    '/images/gal/1.JPG',
+    '/images/gal/2.JPG',
+    '/images/gal/3.JPG',
+    '/images/gal/4.JPG',
     '/images/gal/5.jpg',
     '/images/gal/6.jpg',
     '/images/gal/7.jpg',
