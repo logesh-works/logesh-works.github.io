@@ -20,9 +20,9 @@ const Socials = () => {
         />
         <Social
           Icon={BiLogoGithub}
-          link="https://github.com/rachit-bharadwaj"
+          link="https://github.com/logesh-works"
         />
-        <Social Icon={FaSquareXTwitter} link="https://twitter.com/rrachiitt" />
+        <Social Icon={FaSquareXTwitter} link="https://x.com/zxlogi" />
       </div>
     </section>
   );
