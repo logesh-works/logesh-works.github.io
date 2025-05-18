@@ -6,6 +6,7 @@ import { FaClipboardUser, FaGithub, FaTrophy } from "react-icons/fa6";
 import { BsFillFileEarmarkCodeFill } from "react-icons/bs";
 import { HiOutlineBriefcase } from "react-icons/hi";
 import { BiMessageSquareDetail } from "react-icons/bi";
+import { BiBookAlt  } from "react-icons/bi";
 
 // shadcn
 import {
@@ -89,7 +90,18 @@ const Navbar = () => {
           </li>
 
           <li>
-            <Link href="/achievements">
+            <Link href="/blog">
+              <Tooltip>
+                <TooltipTrigger>
+                  <BiBookAlt  />
+                </TooltipTrigger>
+                <TooltipContent>Blog</TooltipContent>
+              </Tooltip>
+            </Link>
+          </li>
+
+          <li>
+            <Link href="/activities">
               <Tooltip>
                 <TooltipTrigger>
                   <FaGithub />

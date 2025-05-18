@@ -14,7 +14,7 @@ const MainSection = () => {
           Logesh Kumar
         </h1>
 
-        <p>Fullstack Developer | And More...</p>
+        <p>Fullstack Engineer | And More...</p>
       </div>
 
       <div className="social-links flex flex-row gap-8">
@@ -34,8 +34,15 @@ const MainSection = () => {
         </Link>
 
         <Link href="/about">
-          <Button variant="secondary" size="lg">
+          <Button variant="outline" size="lg">
             <p className="md:text-lg">About me </p>
+          </Button>
+        </Link>
+      </div>
+      <div className="flex lg:mt-2">
+        <Link href="/blog">
+          <Button variant="secondary" size="lg">
+            <p className="md:text-lg">My Blog</p>
           </Button>
         </Link>
       </div>
