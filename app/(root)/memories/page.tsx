@@ -1,12 +1,17 @@
-import { ImageView } from "@/components/memories";
+import type { Metadata } from "next";
 
-const Memories = () => {
-    return(
-        <div className="flex flex-col items-center py-14 gap-10 px-10 pb-24">
-      <h1 className="text-4xl font-bold">Memories</h1>
-      <ImageView />
-    </div>
-    )
-}
+import Gallery from "@/components/pages/Gallery";
+import { SectionHeading } from "@/components/site";
 
-export default Memories;
+export const metadata: Metadata = {
+  title: "Memories",
+};
+
+const MemoriesPage = () => (
+  <main className="container pb-24 pt-32 md:pt-40">
+    <SectionHeading as="h1" index="//" label="Off the clock" title="Memories" />
+    <Gallery />
+  </main>
+);
+
+export default MemoriesPage;

@@ -1,17 +1,24 @@
-import { Achievements } from "@/components/achievements";
+import type { Metadata } from "next";
 
-const AchievementsPage = () => {
-  return (
-    <div className="flex flex-col items-center py-14 gap-10 px-10 pb-24">
-      <h1 className="text-4xl font-bold">Recent GitHub PushEvents
+import ActivityList from "@/components/pages/ActivityList";
+import { SectionHeading } from "@/components/site";
 
-</h1>
-      <p className="text-gray-400">On this page, you can view my recent GitHub pushes, highlighting my latest contributions to various projects</p>
-      <Achievements />
-
-     
-    </div>
-  );
+export const metadata: Metadata = {
+  title: "GitHub Activity",
+  description: "Recent GitHub pushes by Logesh Kumar, highlighting the latest contributions across projects.",
 };
 
-export default AchievementsPage;
+const ActivitiesPage = () => (
+  <main className="container pb-24 pt-32 md:pt-40">
+    <SectionHeading
+      as="h1"
+      index="//"
+      label="GitHub activity"
+      title="Recent pushes"
+      intro="My latest GitHub pushes, pulled live from the GitHub API."
+    />
+    <ActivityList />
+  </main>
+);
+
+export default ActivitiesPage;
