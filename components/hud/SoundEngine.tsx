@@ -30,7 +30,6 @@ const SoundEngine = () => {
     const first = (e: Event) => {
       const el = e.target as Element | null;
       if (el?.closest?.("[data-sound-toggle]")) return cleanup();
-      if (el?.closest?.('[data-sound-choice="off"]')) return cleanup();
       if (!world.soundOn) void setSound(true, false);
       cleanup();
     };

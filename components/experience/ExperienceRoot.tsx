@@ -31,7 +31,6 @@ const ExperienceRoot = () => {
   const [mode, setMode] = useState<"pending" | "webgl" | "static">("pending");
   const [steps, setSteps] = useState({ fonts: false, chunk: false, frames: false, time: false });
   const [entered, setEntered] = useState(false);
-  const [gate, setGate] = useState(true);
 
   useEffect(() => {
     const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
@@ -45,7 +44,6 @@ const ExperienceRoot = () => {
     } catch {
       /* private mode: always show the full intro */
     }
-    setGate(!seen);
     const minTime = window.setTimeout(() => setSteps((s) => ({ ...s, time: true })), reduced || seen ? 300 : 1800);
     document.fonts?.ready.then(() => setSteps((s) => ({ ...s, fonts: true })));
     if (webgl) loadWorld().then(() => setSteps((s) => ({ ...s, chunk: true })));
@@ -74,7 +72,7 @@ const ExperienceRoot = () => {
 
   return (
     <>
-      <LoadingScreen progress={progress >= 0.999 ? 1 : progress} gate={gate} onDone={onDone} />
+      <LoadingScreen progress={progress >= 0.999 ? 1 : progress} onDone={onDone} />
       <div aria-hidden className={cn("fixed inset-0 z-[1] transition-opacity duration-[1400ms] ease-out", entered ? "opacity-100" : "opacity-0")}>
         {mode === "webgl" && <WorldCanvas onReady={onReady} />}
         {mode === "static" && <div className="h-full w-full bg-[radial-gradient(ellipse_at_50%_60%,#2a2724_0%,#0f0f0f_65%)]" />}
