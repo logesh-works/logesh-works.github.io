@@ -1,29 +1,35 @@
 import Link from "next/link";
 
+import SoundToggle from "@/components/hud/SoundToggle";
 import { moreLinks, profile } from "@/constants";
 
+/** Compact footer for the secondary pages (blog, activity, memories). */
 const SiteFooter = () => (
-  <footer className="relative z-[2] border-t border-line/10 bg-ink/80 pb-16 backdrop-blur">
-    <div className="container flex flex-col gap-6 py-10 text-sm text-muted md:flex-row md:items-center md:justify-between">
-      <p className="font-mono text-xs">
-        © {new Date().getFullYear()} {profile.name} · {profile.location}
-      </p>
-      <nav aria-label="More">
-        <ul className="flex flex-wrap gap-x-6 gap-y-2">
+  <footer className="border-t border-white/10 px-edge">
+    <div className="t-micro flex flex-col items-center gap-5 py-10 text-fg/40 lg:flex-row">
+      <p>© {new Date().getFullYear()} · {profile.name}</p>
+      <nav aria-label="More" className="lg:ml-auto">
+        <ul className="flex flex-wrap justify-center gap-x-8 gap-y-2">
+          <li>
+            <Link href="/" className="text-signal transition-colors hover:text-fg">
+              Home
+            </Link>
+          </li>
           {moreLinks.map((l) => (
             <li key={l.href}>
-              <Link href={l.href} className="link-underline hover:text-fg">
+              <Link href={l.href} className="text-signal transition-colors hover:text-fg">
                 {l.label}
               </Link>
             </li>
           ))}
           <li>
-            <a href={profile.resume} className="link-underline hover:text-fg" target="_blank" rel="noopener">
+            <a href={profile.resume} target="_blank" rel="noopener" className="text-signal transition-colors hover:text-fg">
               Resume
             </a>
           </li>
         </ul>
       </nav>
+      <SoundToggle />
     </div>
   </footer>
 );

@@ -1,33 +1,21 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { Inter, JetBrains_Mono, Outfit } from "next/font/google";
+import { Archivo } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 
 import "@/app/globals.css";
 
-import Cursor from "@/components/experience/Cursor";
-import Navigation from "@/components/experience/Navigation";
-import { SiteFooter } from "@/components/site";
+import Header from "@/components/hud/Header";
+import SiteMenu from "@/components/hud/SiteMenu";
+import SoundEngine from "@/components/hud/SoundEngine";
 import { profile, socials } from "@/constants";
 
-const display = Outfit({
+/** One variable family for everything; the width axis gives the extended display look. */
+const archivo = Archivo({
   subsets: ["latin"],
-  weight: ["200", "300", "400", "500"],
+  axes: ["wdth"],
   display: "swap",
-  variable: "--font-display",
-});
-
-const sans = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-sans",
-});
-
-const mono = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  display: "swap",
-  variable: "--font-mono",
+  variable: "--font-archivo",
 });
 
 const description =
@@ -67,7 +55,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b0a09",
+  themeColor: "#0f0f0f",
   colorScheme: "dark",
 };
 
@@ -88,10 +76,15 @@ const personJsonLd = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
+    <html lang="en" data-theme="black" className={archivo.variable}>
       <head>
         {/* Mark JS before paint: loader and reveal effects only apply when scripts run. */}
-        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "var d=document.documentElement;d.classList.add('js');if(location.pathname==='/')d.dataset.booting='1'",
+          }}
+        />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }} />
       </head>
       <body className="min-h-screen">
@@ -101,12 +94,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           Skip to content
         </a>
-        <Navigation />
+        <Header />
+        <SiteMenu />
+        <SoundEngine />
         <div id="main">{children}</div>
-        <SiteFooter />
-        <div aria-hidden className="grain pointer-events-none fixed inset-0 z-[70]" />
-        <div aria-hidden className="vignette pointer-events-none fixed inset-0 z-[3]" />
-        <Cursor />
+        <div aria-hidden className="noise pointer-events-none fixed inset-0 z-[85]" />
+        <div aria-hidden className="vignette pointer-events-none fixed inset-0 z-[2]" />
         <Analytics />
       </body>
     </html>

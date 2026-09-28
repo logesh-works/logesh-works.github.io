@@ -13,16 +13,15 @@ interface SectionHeadingProps {
 
 const SectionHeading = ({ index, label, title, intro, as: H = "h2", id }: SectionHeadingProps) => (
   <Reveal className="mb-12 grid gap-6 md:mb-16 lg:grid-cols-12 lg:gap-10">
-    <p className="eyebrow flex items-center gap-3 self-start lg:col-span-3 lg:pt-4">
+    <p className="t-eyebrow flex items-center gap-3 self-start lg:col-span-3 lg:pt-4">
       <span className="text-signal">{index}</span>
-      <span aria-hidden className="h-px w-8 bg-line/20" />
       {label}
     </p>
     <div className="lg:col-span-9">
-      <H id={id} className="font-display text-[clamp(2.1rem,5vw,4rem)] font-medium leading-[1.02] tracking-tightest">
+      <H id={id} className="wide font-display text-[clamp(2.1rem,5vw,4.25rem)] font-extrabold uppercase leading-[0.9] tracking-[-0.02em]">
         {title}
       </H>
-      {intro && <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted md:text-lg">{intro}</p>}
+      {intro && <p className="t-body mt-5 max-w-2xl">{intro}</p>}
     </div>
   </Reveal>
 );

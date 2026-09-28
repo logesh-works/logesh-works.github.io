@@ -270,7 +270,7 @@ export const education: EducationItem[] = [
 
 /** Chapters of the single-page journey, in scroll order. */
 export const chapters = [
-  { id: "top", label: "Opening" },
+  { id: "top", label: "Home" },
   { id: "about", label: "About" },
   { id: "stack", label: "Systems" },
   { id: "experience", label: "Experience" },

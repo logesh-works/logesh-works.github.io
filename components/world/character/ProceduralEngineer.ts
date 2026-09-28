@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
 import { PoseMixer } from "./animation";
+import { LOOKS } from "./looks";
 import { createCharacterMaterials } from "./materials";
 import type { CharacterDriver, CharacterFrame, JointName } from "./rig";
 
@@ -275,6 +276,13 @@ export const createProceduralEngineer = (): CharacterDriver => {
       // and follow the gaze vertically like real lids.
       const lidRest = -0.3 + gaze.x * 0.6;
       lids.forEach((l) => (l.rotation.x = 1.45 + (lidRest - 1.45) * open));
+    },
+    setLook(index: number) {
+      const look = LOOKS[index % LOOKS.length];
+      m.jacket.color.set(look.jacket);
+      m.hoodie.color.set(look.hoodie);
+      m.cargo.color.set(look.cargo);
+      m.sneaker.color.set(look.sneaker);
     },
     dispose() {
       geos.forEach((g) => g.dispose());

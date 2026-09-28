@@ -4,22 +4,18 @@ import Lenis from "lenis";
 import { useEffect, useRef } from "react";
 
 import { chapters } from "@/constants";
-import { CHAPTER_BG } from "@/lib/palette";
-import { emit, nav, world } from "@/lib/world";
+import { emit, nav, on, world } from "@/lib/world";
 
-interface BeatInfo {
-  el: HTMLElement;
-  inner: HTMLElement | null;
+interface Stop {
   center: number;
-  height: number;
   chapter: string;
 }
 
 /**
- * Turns page scroll into the world's continuous beat position. Beats are the
- * full-screen blocks marked `data-beat`; `world.beat` is fractional between them.
- * Also: Lenis smooth scrolling, anchor navigation, per-beat CSS progress (`--t`)
- * for typography parallax, chapter changes and the chapter background tint.
+ * Turns page scroll into the world's continuous step position. Stops are the
+ * elements marked `data-beat` (the invisible scroll track plus the footer);
+ * `world.beat` is fractional between their centres. Also owns Lenis smooth
+ * scrolling, chapter changes and scroll-locking while an overlay is open.
  */
 const ScrollController = ({ locked }: { locked: boolean }) => {
   const lenisRef = useRef<Lenis | null>(null);
@@ -27,58 +23,44 @@ const ScrollController = ({ locked }: { locked: boolean }) => {
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     world.reduced = reduced;
-    let beats: BeatInfo[] = [];
+    let stops: Stop[] = [];
     let frame = 0;
 
-    const measure = () => {
-      const els = Array.from(document.querySelectorAll<HTMLElement>("[data-beat]"));
-      beats = els.map((el) => {
-        const r = el.getBoundingClientRect();
-        return {
-          el,
-          inner: el.querySelector<HTMLElement>("[data-beat-inner]"),
-          center: r.top + window.scrollY + r.height / 2,
-          height: r.height,
-          chapter: el.closest<HTMLElement>("[data-chapter]")?.dataset.chapter ?? "top",
-        };
-      });
-      world.beatIds = els.map((el) => el.dataset.beat!);
-      world.beatSides = els.map((el) => (el.dataset.frame as "left" | "right" | "center") ?? "center");
-      emit("beats");
-      update();
-    };
-
     const update = () => {
-      if (!beats.length) return;
-      const vh = window.innerHeight;
-      const v = window.scrollY + vh / 2;
+      if (!stops.length) return;
+      const v = window.scrollY + window.innerHeight / 2;
       let b = 0;
-      if (v <= beats[0].center) b = 0;
-      else if (v >= beats[beats.length - 1].center) b = beats.length - 1;
-      else {
-        for (let i = 0; i < beats.length - 1; i++) {
-          if (v < beats[i + 1].center) {
-            b = i + (v - beats[i].center) / (beats[i + 1].center - beats[i].center);
+      if (v >= stops[stops.length - 1].center) b = stops.length - 1;
+      else if (v > stops[0].center) {
+        for (let i = 0; i < stops.length - 1; i++) {
+          if (v < stops[i + 1].center) {
+            b = i + (v - stops[i].center) / (stops[i + 1].center - stops[i].center);
             break;
           }
         }
       }
       world.beat = b;
 
-      for (const beat of beats) {
-        // Normalise by the taller of viewport and beat so long beats stay readable throughout.
-        const t = (v - beat.center) / Math.max(vh, beat.height * 0.85);
-        if (Math.abs(t) < 0.45 && !beat.el.dataset.seen) beat.el.dataset.seen = "true";
-        if (!reduced && beat.inner && Math.abs(t) < 2) beat.inner.style.setProperty("--t", t.toFixed(3));
-      }
-
-      const chapterId = beats[Math.round(b)]?.chapter ?? "top";
+      const chapterId = stops[Math.round(b)]?.chapter ?? "top";
       if (chapterId !== world.chapter) {
         world.chapter = chapterId;
         world.chapterIndex = Math.max(0, chapters.findIndex((c) => c.id === chapterId));
-        document.documentElement.style.backgroundColor = CHAPTER_BG[chapterId] ?? CHAPTER_BG.top;
         emit("chapter");
       }
+    };
+
+    const measure = () => {
+      const els = Array.from(document.querySelectorAll<HTMLElement>("[data-beat]"));
+      stops = els.map((el) => {
+        const r = el.getBoundingClientRect();
+        return { center: r.top + window.scrollY + r.height / 2, chapter: el.dataset.chapter ?? "top" };
+      });
+      const ids = els.map((el) => el.dataset.beat!);
+      if (ids.join() !== world.beatIds.join()) {
+        world.beatIds = ids;
+        emit("beats");
+      }
+      update();
     };
 
     const onScroll = () => {
@@ -88,19 +70,24 @@ const ScrollController = ({ locked }: { locked: boolean }) => {
 
     let lenis: Lenis | null = null;
     if (!reduced) {
-      lenis = new Lenis({ lerp: 0.085, smoothWheel: true, anchors: true, autoRaf: true });
+      lenis = new Lenis({ lerp: 0.08, smoothWheel: true, anchors: true, autoRaf: true });
       lenis.on("scroll", onScroll);
       lenisRef.current = lenis;
     }
     window.addEventListener("scroll", onScroll, { passive: true });
 
     nav.toBeat = (id: string) => {
-      const el = document.querySelector<HTMLElement>(`[data-beat="${id}"]`);
+      const el = document.getElementById(id);
       if (!el) return;
-      const target = el.getBoundingClientRect().top + window.scrollY - (window.innerHeight - el.offsetHeight) / 2;
-      if (lenis) lenis.scrollTo(Math.max(0, target), { duration: 1.6 });
-      else window.scrollTo({ top: target });
+      if (lenis) lenis.scrollTo(el, { duration: 1.6 });
+      else el.scrollIntoView();
     };
+
+    // Overlays freeze the page behind them.
+    const offPanel = on("panel", () => {
+      if (world.panel) lenis?.stop();
+      else if (!document.documentElement.dataset.locked) lenis?.start();
+    });
 
     measure();
     const ro = new ResizeObserver(() => measure());
@@ -110,6 +97,7 @@ const ScrollController = ({ locked }: { locked: boolean }) => {
 
     return () => {
       cancelAnimationFrame(frame);
+      offPanel();
       ro.disconnect();
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", onScroll);
@@ -126,8 +114,8 @@ const ScrollController = ({ locked }: { locked: boolean }) => {
       document.documentElement.dataset.locked = "true";
       return;
     }
-    lenis?.start();
     delete document.documentElement.dataset.locked;
+    lenis?.start();
     const hash = window.location.hash.slice(1);
     const target = hash ? document.getElementById(hash) : null;
     if (target) {

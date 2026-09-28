@@ -38,5 +38,7 @@ export interface CharacterDriver {
   /** Add this to the scene; the driver moves its own limbs, the scene moves the root. */
   root: THREE.Object3D;
   update(frame: CharacterFrame): void;
+  /** Switch outfit colourway, if the model supports it. */
+  setLook?(index: number): void;
   dispose(): void;
 }

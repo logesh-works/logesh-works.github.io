@@ -1,8 +1,8 @@
-import * as THREE from "three";
-
-/** Where the character actually is this frame (he lags his mark while walking). The camera tracks this. */
+/** Live character state shared between the stage, the drag controls and the camera. */
 export const characterState = {
-  pos: new THREE.Vector3(0, 0, 1.3),
-  yaw: 0,
-  moving: false,
+  /** Extra yaw from the visitor dragging the character (radians). */
+  dragYaw: 0,
+  dragVelocity: 0,
+  dragging: false,
+  lastDrag: 0,
 };

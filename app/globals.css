@@ -2,48 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ------------------------------------------------------------------ */
-/* Tokens                                                              */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
+/* Tokens (docs/design-spec.md §1)                                     */
+/* ================================================================== */
 
 @layer base {
-  :root {
-    --ink: 11 10 9;        /* warm black */
-    --panel: 21 19 17;     /* charcoal-brown surfaces */
-    --raised: 31 28 25;
-    --line: 239 233 225;   /* hairlines, used at low alpha */
-    --fg: 239 233 225;     /* warm white */
-    --muted: 150 142 132;
-    --signal: 222 164 90;  /* amber: events, focus, the live path */
-    --steel: 138 124 105;  /* wiring */
+  :root,
+  :root[data-theme="black"] {
+    --ink: 15 15 15;          /* #0f0f0f page */
+    --panel: 33 33 33;        /* #212121 menu / modal panels */
+    --raised: 42 42 42;
+    --line: 255 255 255;      /* hairlines at low alpha */
+    --fg: 255 255 255;
+    --muted: 150 150 150;     /* secondary text */
+    --accent: 156 116 67;     /* #9c7443 bronze */
+    --accent-deep: 121 74 47; /* #794a2f glow */
+
+    --noise-opacity: 0.05;
+    --button-bg: rgb(0 0 0 / 0.25);
+    --overlay: rgb(0 0 0 / 0.6);
+
+    --ease: cubic-bezier(0.165, 0.84, 0.44, 1);
+    --ease-inout: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-wipe: cubic-bezier(1, 0.01, 0.24, 0.995);
+
+    /* 16-column fluid grid */
+    --edge: 20px;
+    --gutter: 20px;
+    --col: calc((100vw - 2 * var(--edge) - 15 * var(--gutter)) / 16);
 
     color-scheme: dark;
   }
 
-  html {
-    background-color: rgb(var(--ink));
-    transition: background-color 1.4s ease;
-    -webkit-text-size-adjust: 100%;
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    html:not(.lenis) {
-      scroll-behavior: smooth;
+  @media (min-width: 1024px) {
+    :root {
+      --edge: 50px;
     }
   }
 
+  html {
+    background-color: rgb(var(--ink));
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
-    @apply text-fg font-sans antialiased;
+    @apply semi-wide font-sans text-fg antialiased;
+    font-size: 13px;
+    line-height: 20px;
     overflow-x: clip;
   }
 
   ::selection {
-    background: rgb(var(--signal) / 0.3);
-    color: rgb(var(--fg));
+    background: rgb(var(--accent) / 0.45);
+    color: #fff;
   }
 
   :focus-visible {
-    outline: 2px solid rgb(var(--signal));
+    outline: 2px solid rgb(var(--accent));
     outline-offset: 3px;
     border-radius: 4px;
   }
@@ -59,211 +74,329 @@ html.lenis body {
 }
 .lenis.lenis-stopped,
 html[data-locked] body,
-html[data-menu] body {
+html[data-overlay] body {
   overflow: hidden;
 }
 
-/* ------------------------------------------------------------------ */
-/* Components                                                          */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
+/* Type scale (§1.4)                                                   */
+/* ================================================================== */
 
 @layer components {
+  .t-h1 {
+    @apply wide font-display uppercase;
+    font-weight: 800;
+    font-size: 1.5rem;
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+  }
+  .t-h2 {
+    @apply wide font-display uppercase;
+    font-weight: 800;
+    font-size: 1.125rem;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+  }
+  .t-h3 {
+    @apply wide font-display uppercase;
+    font-weight: 400;
+    font-size: 0.625rem;
+    line-height: 1.2;
+  }
+  .t-h3 b,
+  .t-h1 b,
+  .t-h2 b {
+    font-weight: 800;
+  }
+  .t-eyebrow {
+    @apply wide font-display uppercase;
+    font-weight: 400;
+    font-size: 0.5625rem;
+    line-height: 1;
+    letter-spacing: 0.58em;
+    color: rgb(var(--fg) / 0.4);
+  }
+  .t-body {
+    @apply semi-wide;
+    font-size: 0.75rem;
+    line-height: 1.33;
+    color: rgb(var(--fg) / 0.55);
+  }
+  .t-label {
+    @apply wide font-display uppercase;
+    font-weight: 700;
+    font-size: 0.625rem;
+    line-height: 1;
+  }
+  .t-micro {
+    @apply wide font-display uppercase;
+    font-weight: 400;
+    font-size: 0.5rem;
+    line-height: 2.6;
+    letter-spacing: 0.58em;
+  }
+  .t-menu {
+    @apply wide font-display uppercase;
+    font-weight: 600;
+    font-size: 2.125rem;
+    line-height: 1;
+  }
+
+  @media (min-width: 1024px) {
+    .t-h1 {
+      font-size: 2.5rem;
+      line-height: 0.9;
+    }
+    .t-h2 {
+      font-size: 1.25rem;
+      line-height: 1.05;
+    }
+    .t-h3 {
+      font-size: 1rem;
+      line-height: 1.25;
+    }
+    .t-body {
+      font-size: 0.9375rem;
+      line-height: 1.4;
+    }
+    .t-menu {
+      font-size: 3.625rem;
+    }
+  }
+  @media (min-width: 1340px) {
+    .t-menu {
+      font-size: 4.25rem;
+    }
+  }
+
+  /* Legacy helpers still used by the secondary pages. */
   .eyebrow {
-    @apply font-mono text-[0.68rem] uppercase tracking-[0.18em] text-muted;
+    @apply t-eyebrow;
   }
-
   .chip {
-    @apply inline-flex items-center rounded-full border border-line/10 bg-ink/50 px-2.5 py-1 font-mono text-[0.68rem] text-muted;
+    @apply semi-wide inline-flex items-center rounded-full border border-line/15 px-2.5 py-1 text-[0.7rem] text-fg/70;
   }
-
   .hud-pill {
-    @apply inline-flex items-center gap-2 rounded-full border border-line/15 bg-ink/50 px-4 py-2 font-display text-[0.7rem] font-normal uppercase tracking-[0.16em] text-fg backdrop-blur-md transition-colors duration-300 hover:border-signal/70 hover:text-signal;
+    @apply pill;
   }
-  .hud-icon {
-    @apply grid h-10 w-10 place-items-center rounded-full border border-line/15 bg-ink/50 text-fg/80 backdrop-blur-md transition-colors duration-300 hover:border-signal/70 hover:text-signal;
-  }
-  /* Gold-to-bronze metallic type, used sparingly for the lead words of a heading. */
-  .gilded {
-    background: linear-gradient(180deg, #f3d4a0 0%, #dea45a 45%, #9c6a36 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .hud-pill--solid {
-    @apply border-fg bg-fg text-ink hover:border-signal hover:bg-signal hover:text-ink;
-  }
-
-  .btn {
-    @apply inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-colors duration-300;
-  }
-  .btn-ghost {
-    @apply btn border border-line/15 text-fg hover:border-signal/60 hover:text-signal;
-  }
-
   .link-underline {
     background-image: linear-gradient(currentColor, currentColor);
     background-size: 0% 1px;
     background-position: 0 100%;
     background-repeat: no-repeat;
-    transition: background-size 0.4s cubic-bezier(0.22, 1, 0.36, 1), color 0.3s;
+    transition: background-size 0.4s var(--ease), color 0.3s var(--ease);
   }
   .link-underline:hover,
   .link-underline:focus-visible {
     background-size: 100% 1px;
   }
+
+  /* ---------------------------------------------------------------- */
+  /* Pill button (§3.1): label + round icon; background scales in      */
+  /* ---------------------------------------------------------------- */
+  .pill {
+    @apply t-label relative inline-flex h-10 shrink-0 items-center gap-2.5 rounded-full text-fg lg:h-[52px];
+    padding: 12px 6px 8px 22px;
+    isolation: isolate;
+  }
+  @media (min-width: 1024px) {
+    .pill {
+      padding: 12px 10px 8px 30px;
+    }
+  }
+  .pill::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--button-bg);
+    backdrop-filter: blur(6px);
+    transform: scale3d(0, 0, 0);
+    animation: scale-in 1s var(--ease) both;
+    animation-delay: var(--d, 0s);
+  }
+  .pill-icon {
+    position: relative;
+    display: grid;
+    height: 30px;
+    width: 30px;
+    margin-top: -4px;
+    place-items: center;
+    border-radius: 50%;
+    color: rgb(var(--accent));
+    transition: color 0.3s var(--ease);
+  }
+  @media (min-width: 1024px) {
+    .pill-icon {
+      height: 36px;
+      width: 36px;
+    }
+  }
+  .pill-icon::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 50%;
+    background: #000;
+    transform: scale3d(0, 0, 0);
+    animation: scale-in 1s var(--ease) both;
+    animation-delay: calc(var(--d, 0s) + 0.15s);
+    transition: background-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
+  }
+  .pill-icon > svg {
+    height: 45%;
+    width: 45%;
+    animation: fade-in 0.3s var(--ease) both;
+    animation-delay: calc(var(--d, 0s) + 0.3s);
+  }
+  .pill:hover .pill-icon,
+  .pill:focus-visible .pill-icon {
+    color: #000;
+  }
+  .pill:hover .pill-icon::before,
+  .pill:focus-visible .pill-icon::before {
+    background: rgb(var(--accent));
+    box-shadow: 0 0 18px rgb(var(--accent-deep));
+  }
+  .pill:active {
+    transform: scale(0.97);
+  }
+  .pill-solid::after {
+    background: #fff;
+  }
+  .pill-solid {
+    color: #000;
+  }
+
+  /* Round icon-only button */
+  .round {
+    @apply relative grid h-10 w-10 shrink-0 place-items-center rounded-full text-signal lg:h-[52px] lg:w-[52px];
+    isolation: isolate;
+    transition: color 0.3s var(--ease);
+  }
+  .round::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 50%;
+    background: #000;
+    transform: scale3d(0, 0, 0);
+    animation: scale-in 1s var(--ease) both;
+    animation-delay: var(--d, 0s);
+    transition: background-color 0.3s var(--ease);
+  }
+  .round:hover,
+  .round:focus-visible {
+    color: #000;
+  }
+  .round:hover::after,
+  .round:focus-visible::after {
+    background: rgb(var(--accent));
+  }
+  .round--ghost::after {
+    background: var(--button-bg);
+    backdrop-filter: blur(6px);
+  }
+  .round--ghost {
+    color: #fff;
+  }
+
+  /* Text link (§3.3) */
+  .tlink {
+    @apply inline-flex items-center gap-1.5 transition-colors duration-300 ease-out;
+  }
+  .tlink svg {
+    height: 6px;
+    width: 6px;
+    fill: rgb(var(--accent));
+  }
+  .tlink:hover {
+    color: rgb(var(--accent));
+  }
 }
 
-/* ------------------------------------------------------------------ */
-/* Atmosphere: film grain + vignette                                   */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
+/* Keyframes (§1.5)                                                    */
+/* ================================================================== */
 
-.grain {
-  opacity: 0.045;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  animation: grain 0.9s steps(6) infinite;
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
-@keyframes grain {
-  0% { background-position: 0 0; }
-  20% { background-position: -60px 40px; }
-  40% { background-position: 80px -30px; }
-  60% { background-position: -40px -70px; }
-  80% { background-position: 50px 60px; }
-  100% { background-position: 0 0; }
+@keyframes fade-y-in {
+  from { opacity: 0; transform: translate3d(0, 30px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes scale-in {
+  from { transform: scale3d(0, 0, 0); }
+  to { transform: none; }
+}
+@keyframes scale-x-in {
+  from { transform: scale3d(0, 1, 1); }
+  to { transform: none; }
+}
+@keyframes move-y-in {
+  from { transform: translate3d(0, 110%, 0); }
+  to { transform: none; }
+}
+
+/* ================================================================== */
+/* Atmosphere                                                          */
+/* ================================================================== */
+
+.noise {
+  opacity: var(--noise-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px auto;
 }
 .vignette {
-  background: radial-gradient(ellipse 120% 90% at 50% 45%, transparent 55%, rgb(0 0 0 / 0.55) 100%);
+  background: radial-gradient(ellipse 120% 95% at 50% 45%, transparent 52%, rgb(0 0 0 / 0.6) 100%);
 }
 
-/* ------------------------------------------------------------------ */
-/* Loader                                                              */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
+/* Hero intro (§2.3)                                                   */
+/* ================================================================== */
 
-.loader {
-  display: none;
+.js .reveal-line > span {
+  display: inline-block;
+  transform: translate3d(0, 110%, 0);
+}
+html[data-entered] .reveal-line > span {
+  animation: move-y-in 0.9s var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 0.08s + 0.35s);
+}
+.js .wordmark {
+  clip-path: inset(0 100% 0 0);
+}
+html[data-entered] .wordmark {
   clip-path: inset(0 0 0 0);
-  transition: clip-path 1s cubic-bezier(0.76, 0, 0.24, 1) 0.25s;
+  transition: clip-path 1.6s var(--ease-inout) 0.1s;
 }
-.js .loader {
-  display: flex;
-}
-.loader-vignette {
-  background: radial-gradient(ellipse at center, rgb(34 35 38) 0%, rgb(10 11 13) 70%);
-}
-.loader-mark,
-.loader-meta {
-  transition: transform 0.9s cubic-bezier(0.76, 0, 0.24, 1), opacity 0.6s ease, filter 0.9s ease;
-}
-.loader.is-leaving {
-  clip-path: inset(0 0 100% 0);
-}
-.loader.is-leaving .loader-mark {
-  transform: translateY(-30px) scale(1.06);
-  opacity: 0;
-  filter: blur(6px);
-}
-.loader.is-leaving .loader-meta,
-.loader.is-leaving .loader-gate {
+.js .hud-in {
   opacity: 0;
 }
-.loader-art {
-  opacity: 0.55;
-  mask-image: linear-gradient(to bottom, #000 40%, transparent 95%);
+html[data-entered] .hud-in {
+  animation: fade-in 0.6s var(--ease) both;
+  animation-delay: var(--d, 0s);
 }
-
-/* ------------------------------------------------------------------ */
-/* Story: beats, scrims, reveals                                       */
-/* ------------------------------------------------------------------ */
-
-/* Beats let the pointer through to the 3D world except over their copy. */
-.beat {
-  pointer-events: none;
-}
-.beat-copy,
-.beat a,
-.beat button,
-.beat [tabindex] {
-  pointer-events: auto;
-}
-.beat-inner {
-  position: relative;
-  z-index: 2;
-  transform: translate3d(0, calc(var(--t, 0) * -64px), 0);
-  opacity: clamp(0, calc(1.62 - max(var(--t, 0), calc(var(--t, 0) * -1)) * 1.35), 1);
-}
-
-/* Legibility over the scene: a soft falloff behind the copy, never a card. */
-.beat::before {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  pointer-events: none;
-  inset: auto 0 0 0;
-  height: 78%;
-  background: linear-gradient(to top, rgb(var(--ink) / 0.94) 25%, rgb(var(--ink) / 0.6) 60%, transparent);
-}
-@media (min-width: 768px) {
-  .beat::before {
-    inset: 0 auto 0 0;
-    height: auto;
-    width: 62%;
-    background: linear-gradient(90deg, rgb(var(--ink) / 0.82) 0%, rgb(var(--ink) / 0.5) 55%, transparent);
-  }
-  .beat[data-side="right"]::before {
-    inset: 0 0 0 auto;
-    background: linear-gradient(270deg, rgb(var(--ink) / 0.82) 0%, rgb(var(--ink) / 0.5) 55%, transparent);
-  }
-  .beat[data-side="center"]::before {
-    display: none;
-  }
-}
-
-.js .beat .rv {
-  opacity: 0;
-  transform: translate3d(0, 22px, 0);
-  transition:
-    opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
-  transition-delay: calc(var(--i, 0) * 80ms + 80ms);
-}
-.js .beat .rv-line {
-  transform: translate3d(0, 110%, 0) rotate(3deg) skewY(7deg);
-  transform-origin: left bottom;
-  transition: transform 1.15s cubic-bezier(0.19, 1, 0.22, 1);
-  transition-delay: calc(var(--i, 0) * 90ms);
-}
-.js .beat[data-seen] .rv {
-  opacity: 1;
-  transform: none;
-}
-.js .beat[data-seen] .rv-line {
-  transform: none;
-}
-
-/* Opening: statement and HUD rise in after the loader. */
-.js .hero-word,
-.js .hero-block {
-  opacity: 0;
-  transform: translate3d(0, 40%, 0) skewY(6deg);
-  transition:
-    opacity 1.2s cubic-bezier(0.19, 1, 0.22, 1),
-    transform 1.4s cubic-bezier(0.19, 1, 0.22, 1);
-  transition-delay: calc(var(--i, 0) * 140ms + 250ms);
-}
-.js .hero-block {
-  transform: translate3d(0, 16px, 0);
-}
-html[data-entered] .hero-word,
-html[data-entered] .hero-block {
-  opacity: 1;
-  transform: none;
+/* Pills only scale in once the home loader has gone (data-booting is set before first paint). */
+html[data-booting] .pill::after,
+html[data-booting] .pill-icon::before,
+html[data-booting] .pill-icon > svg,
+html[data-booting] .round::after {
+  animation-play-state: paused;
 }
 
 .scroll-mouse {
   position: relative;
-  width: 20px;
-  height: 32px;
-  border: 1.5px solid rgb(var(--fg) / 0.7);
-  border-radius: 12px;
+  display: block;
+  width: 19px;
+  height: 30px;
+  border: 1.5px solid rgb(255 255 255 / 0.85);
+  border-radius: 10px;
 }
 .scroll-mouse::after {
   content: "";
@@ -274,170 +407,298 @@ html[data-entered] .hero-block {
   height: 6px;
   margin-left: -1px;
   border-radius: 2px;
-  background: rgb(var(--signal));
-  animation: wheel 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  background: linear-gradient(rgb(var(--accent)), #fff);
+  animation: wheel 1.8s var(--ease-inout) infinite;
 }
 @keyframes wheel {
   0% { transform: translateY(0); opacity: 1; }
-  70% { transform: translateY(10px); opacity: 0; }
+  70% { transform: translateY(9px); opacity: 0; }
   100% { transform: translateY(0); opacity: 0; }
 }
 
-/* ------------------------------------------------------------------ */
-/* HUD: sound equaliser, menu                                          */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
+/* Fixed content blocks (§2.4)                                         */
+/* ================================================================== */
 
-.eq-bar {
-  height: 2px;
-  transition: height 0.4s ease;
-}
-.eq-on {
-  animation: eq 1.1s ease-in-out infinite alternate;
-}
-@keyframes eq {
-  0% { height: 3px; }
-  30% { height: 12px; }
-  60% { height: 6px; }
-  100% { height: 15px; }
-}
-
-.menu[hidden] {
-  display: none;
-}
-.menu-item {
-  position: relative;
-  border-color: transparent;
-}
-.menu-item::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 1px;
-  background: rgb(var(--line) / 0.12);
-  transform-origin: left;
-  animation: line-in 0.9s cubic-bezier(0.76, 0, 0.24, 1) both;
-  animation-delay: calc(var(--i) * 60ms + 100ms);
-}
-.menu-item > a {
-  animation: item-in 0.9s cubic-bezier(0.19, 1, 0.22, 1) both;
-  animation-delay: calc(var(--i) * 60ms + 150ms);
-}
-@keyframes line-in {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
-}
-@keyframes item-in {
-  from { opacity: 0; transform: translate3d(0, 60%, 0) skewY(5deg); }
-  to { opacity: 1; transform: none; }
-}
-
-/* ------------------------------------------------------------------ */
-/* Custom cursor                                                       */
-/* ------------------------------------------------------------------ */
-
-html.has-cursor,
-html.has-cursor * {
-  cursor: none !important;
-}
-html.has-cursor input,
-html.has-cursor textarea {
-  cursor: text !important;
-}
-.cursor-dot,
-.cursor-ring {
+.js .cblock {
   position: fixed;
-  left: 0;
-  top: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+.js .cblock[data-active] {
+  pointer-events: auto;
+}
+.block-title,
+.block-body {
+  perspective: 1500px;
+}
+.js .cblock .line {
+  display: block;
   opacity: 0;
-  transition: opacity 0.3s ease;
-  will-change: transform;
-}
-.cursor-dot.is-visible,
-.cursor-ring.is-visible {
-  opacity: 1;
-}
-.cursor-dot {
-  width: 6px;
-  height: 6px;
-  margin: -3px 0 0 -3px;
-  border-radius: 50%;
-  background: rgb(var(--signal));
-}
-.cursor-ring {
-  width: 0;
-  height: 0;
-}
-.cursor-ring::before {
-  content: "";
-  position: absolute;
-  left: -18px;
-  top: -18px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid rgb(var(--fg) / 0.35);
+  transform: rotate3d(1, 0.15, 0, -90deg) translate3d(0, 10px, 0);
+  transform-origin: 0 100%;
+  transform-style: preserve-3d;
   transition:
-    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 0.3s,
-    background-color 0.3s;
+    transform 0.45s var(--ease),
+    opacity 0.3s var(--ease);
 }
-.cursor-ring.is-active::before {
-  transform: scale(1.7);
-  border-color: rgb(var(--signal) / 0.8);
-  background-color: rgb(var(--signal) / 0.06);
-}
-.cursor-label {
-  position: absolute;
-  left: 38px;
-  top: -8px;
-  white-space: nowrap;
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: rgb(var(--fg));
-  opacity: 0;
-  transform: translateX(-6px);
-  transition: opacity 0.3s, transform 0.3s;
-}
-.cursor-ring.has-label .cursor-label {
+.js .cblock[data-active] .line {
   opacity: 1;
   transform: none;
+  transition:
+    transform 1s var(--ease),
+    opacity 0.6s var(--ease);
+  transition-delay: calc(var(--i, 0) * 0.1s + 0.15s);
+}
+.js .cblock .fade {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+  transition: opacity 0.3s var(--ease), transform 0.45s var(--ease);
+}
+.js .cblock[data-active] .fade {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.7s var(--ease), transform 0.9s var(--ease);
+  transition-delay: calc(var(--i, 0) * 0.08s + 0.35s);
+}
+.cblock .line {
+  display: block;
+}
+.block-title b {
+  color: rgb(var(--accent));
 }
 
-/* ------------------------------------------------------------------ */
-/* Reduced motion: keep every piece of content, drop the movement      */
-/* ------------------------------------------------------------------ */
+/* Desktop: vertically centred at a screen edge. Mobile: pinned above the toolbar over a scrim. */
+.js .cblock {
+  left: var(--edge);
+  right: var(--edge);
+  bottom: 84px;
+}
+@media (min-width: 1024px) {
+  .js .cblock {
+    top: 50%;
+    bottom: auto;
+    right: auto;
+    transform: translate3d(0, -50%, 0);
+    width: calc(var(--col) * 6 + var(--gutter) * 5);
+  }
+  .js .cblock[data-side="right"] {
+    left: auto;
+    right: var(--edge);
+  }
+  .js .cblock[data-side="left"] {
+    left: calc(var(--edge) + var(--col) + var(--gutter));
+  }
+}
+@media (min-width: 1440px) {
+  .js .cblock {
+    width: calc(var(--col) * 5 + var(--gutter) * 4);
+  }
+}
+.js .block-scrim {
+  position: fixed;
+  inset: auto 0 0 0;
+  height: 70svh;
+  z-index: 19;
+  pointer-events: none;
+  background: linear-gradient(to top, rgb(var(--ink) / 0.96) 30%, rgb(var(--ink) / 0.7) 62%, transparent);
+  opacity: 0;
+  transition: opacity 0.6s var(--ease);
+}
+.js .block-scrim[data-on] {
+  opacity: 1;
+}
+@media (min-width: 1024px) {
+  .js .block-scrim {
+    display: none;
+  }
+}
+html[data-footer] .cblock,
+html[data-footer] .toolbar,
+html[data-footer] .block-scrim {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.4s var(--ease);
+}
+
+/* No-JS: blocks flow as ordinary sections. */
+html:not(.js) .cblock {
+  position: relative;
+  margin: 0 auto;
+  max-width: 40rem;
+  padding: 3rem 20px;
+}
+html:not(.js) .scroll-track,
+html:not(.js) .toolbar {
+  display: none;
+}
+
+/* ================================================================== */
+/* Sound toggle (§3.2): five bars                                      */
+/* ================================================================== */
+
+.sound-bars {
+  display: flex;
+  height: 15px;
+  width: 23px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.sound-bars > span {
+  display: block;
+  width: 3px;
+  height: 100%;
+  background: currentColor;
+  transform: scaleY(0.1);
+  transform-origin: 50% 100%;
+  transition: transform 0.5s var(--ease), background-color 0.3s var(--ease);
+}
+.sound-bars[data-on] > span {
+  animation: bar 1s var(--ease-inout) infinite;
+}
+.sound-bars[data-on] > span:nth-child(1) { --lo: 0.1; --hi: 0.55; animation-delay: 0.26s; }
+.sound-bars[data-on] > span:nth-child(2) { --lo: 0.1; --hi: 0.55; animation-delay: 0.32s; }
+.sound-bars[data-on] > span:nth-child(3) { --lo: 0.41; --hi: 0.86; animation-delay: 0.04s; }
+.sound-bars[data-on] > span:nth-child(4) { --lo: 0.45; --hi: 0.9; animation-delay: 0.47s; }
+.sound-bars[data-on] > span:nth-child(5) { --lo: 0.45; --hi: 0.9; animation-delay: 0.18s; }
+@keyframes bar {
+  0%, 100% { transform: scaleY(var(--lo)); }
+  50% { transform: scaleY(var(--hi)); }
+}
+
+/* ================================================================== */
+/* Overlays: menu and panels (§2.7, §2.8)                              */
+/* ================================================================== */
+
+.overlay[hidden] {
+  display: none;
+}
+.overlay {
+  animation: fade-in 0.35s var(--ease) both;
+}
+.overlay-panel {
+  animation: panel-in 0.8s var(--ease-inout) both;
+}
+@keyframes panel-in {
+  from { transform: translate3d(0, 100vh, 0); }
+  to { transform: none; }
+}
+.overlay .stagger {
+  overflow: hidden;
+}
+.overlay .stagger > * {
+  display: block;
+  animation: move-y-in 0.5s var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 0.1s + 0.25s);
+}
+.overlay .rule {
+  transform-origin: 0 50%;
+  animation: scale-x-in 1s var(--ease) both;
+  animation-delay: 0.3s;
+}
+
+/* Timeline (the reference's roadmap) */
+.timeline {
+  position: relative;
+}
+.timeline::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 7px;
+  border-left: 1px dashed rgb(var(--accent) / 0.7);
+}
+.timeline-dot {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  height: 15px;
+  width: 15px;
+  border-radius: 50%;
+  border: 1px solid rgb(var(--accent));
+  background: rgb(var(--panel));
+}
+.timeline-dot::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: #fff;
+}
+.timeline-item-dot {
+  position: absolute;
+  left: 4px;
+  top: 7px;
+  height: 7px;
+  width: 7px;
+  border-radius: 50%;
+  border: 1px solid rgb(var(--accent) / 0.6);
+  background: rgb(var(--panel));
+}
+
+/* ================================================================== */
+/* Loader (§3.5)                                                       */
+/* ================================================================== */
+
+.loader {
+  display: none;
+  background:
+    radial-gradient(circle at 50%, transparent 50%, #000 100%),
+    linear-gradient(to top, #0c0c0c 0%, #1e1e1e 100%);
+  transition: transform 1.1s var(--ease-wipe);
+}
+.js .loader {
+  display: flex;
+}
+.loader.is-leaving {
+  transform: translate3d(0, -100vh, 0);
+}
+.loader-word {
+  display: inline-block;
+  animation: move-y-in 0.5s var(--ease) both;
+  animation-delay: calc(var(--i) * 0.05s + 0.1s);
+}
+
+/* Footer slider scrollbar (§2.6) */
+.slider {
+  scrollbar-width: none;
+}
+.slider::-webkit-scrollbar {
+  display: none;
+}
+
+/* ================================================================== */
+/* Reduced motion: keep everything, drop the movement                  */
+/* ================================================================== */
 
 @media (prefers-reduced-motion: reduce) {
-  .grain,
-  .scroll-mouse::after,
-  .eq-on {
+  .js .cblock .line,
+  .js .cblock .fade,
+  .js .cblock[data-active] .line,
+  .js .cblock[data-active] .fade {
+    transform: none;
+    transition: opacity 0.3s linear;
+    transition-delay: 0s;
+  }
+  .sound-bars[data-on] > span,
+  .scroll-mouse::after {
     animation: none;
   }
-  .beat-inner {
-    transform: none;
-    opacity: 1;
+  .sound-bars[data-on] > span {
+    transform: scaleY(0.6);
   }
-  .js .beat .rv,
-  .js .beat .rv-line,
-  .js .hero-word,
-  .js .hero-block {
-    transform: none;
-    transition: opacity 0.4s linear;
-  }
-  .js .beat .rv-line {
-    transform: none;
-  }
-  .menu-item::after,
-  .menu-item > a {
+  html[data-entered] .reveal-line > span,
+  .overlay-panel,
+  .overlay .stagger > *,
+  .loader-word {
     animation: none;
+    transform: none;
   }
-  .loader,
-  .loader-mark,
-  .loader-meta {
-    transition-duration: 0.2s;
+  html[data-entered] .wordmark {
+    transition: none;
+  }
+  .loader {
+    transition-duration: 0.3s;
   }
 }

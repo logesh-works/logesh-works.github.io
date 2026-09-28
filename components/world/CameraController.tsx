@@ -1,121 +1,91 @@
 "use client";
 
 import { useFrame, useThree } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
+import { useWorld } from "@/lib/useWorld";
 import { world } from "@/lib/world";
 
-import { characterState } from "./characterState";
-import { planFor, type Shot } from "./choreography";
+import { shotFor } from "./cameraPath";
 
 const smooth = (t: number) => t * t * (3 - 2 * t);
-
-/** Film offset that pushes the subject away from the side the text sits on. */
-const FILM_SHIFT = 6.5;
+/** Film offset that pushes the character away from the side the copy sits on. */
+const FILM_SHIFT = 5.5;
 
 /**
- * Cinematic camera: each beat defines a shot around the character (or a fixed
- * place). Between beats shots blend with scroll; everything is damped so the
- * camera glides, and a little pointer parallax keeps the frame alive.
+ * Scroll-driven camera: positions follow a Catmull-Rom spline through every
+ * step's shot, so the move between steps is a continuous glide rather than a cut.
+ * Everything is damped, with a little pointer parallax on top.
  */
 const CameraController = () => {
   const { camera, size } = useThree();
   const cam = camera as THREE.PerspectiveCamera;
-  const look = useRef(new THREE.Vector3(0, 1.3, 0));
+  const look = useRef(new THREE.Vector3(0, 1.6, 0));
   const init = useRef(false);
-  const follow = useRef(0);
-  const tmp = useMemo(
-    () => ({
-      away: new THREE.Vector3(),
-      camA: new THREE.Vector3(),
-      camB: new THREE.Vector3(),
-      la: new THREE.Vector3(),
-      lb: new THREE.Vector3(),
-      chest: new THREE.Vector3(),
-      right: new THREE.Vector3(),
-      followCam: new THREE.Vector3(),
-      followLook: new THREE.Vector3(),
-    }),
-    []
-  );
-
   const portrait = size.width / size.height < 0.9;
+  useWorld("beats");
+  const key = world.beatIds.join(",");
 
-  const resolve = (shot: Shot, outCam: THREE.Vector3, outLook: THREE.Vector3) => {
-    const c = characterState.pos;
-    tmp.chest.set(c.x, shot.look.lift ?? 1.3, c.z);
-    if (shot.look.at) {
-      outLook.set(...shot.look.at);
-      outLook.lerp(tmp.chest, 1 - (shot.look.mix ?? 0.5));
-    } else {
-      outLook.copy(tmp.chest);
-    }
-    if ("rel" in shot.cam) {
-      const [x, y, z] = shot.cam.rel;
-      outCam.set(c.x + x, y, c.z + z);
-    } else {
-      outCam.set(...shot.cam.abs);
-    }
-    if (portrait) {
-      // Pull back and raise slightly so the character sits in the upper half above the text.
-      const away = tmp.away;
-      away.copy(outCam).sub(outLook).multiplyScalar(0.55);
-      away.y *= 0.4;
-      outCam.add(away);
-      outLook.y -= 0.35;
-    }
-  };
+  // Rebuilt when the step list or orientation changes.
+  const path = useMemo(() => {
+    const ids = key ? key.split(",") : ["top"];
+    const pts = ids.map((id) => {
+      const s = shotFor(id);
+      const p = new THREE.Vector3(...s.cam);
+      if (portrait && s.text !== "center") {
+        // Pull back so the whole character fits above the copy at the bottom.
+        const t = new THREE.Vector3(...s.target);
+        p.sub(t).multiplyScalar(1.45).add(t);
+      }
+      return p;
+    });
+    if (pts.length === 1) pts.push(pts[0].clone());
+    return { ids, curve: new THREE.CatmullRomCurve3(pts, false, "centripetal", 0.5) };
+  }, [key, portrait]);
+
+  // Pointer parallax (fine pointers only).
+  useEffect(() => {
+    if (!window.matchMedia("(pointer: fine)").matches) return;
+    const onMove = (e: PointerEvent) => {
+      world.pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+      world.pointer.y = (e.clientY / window.innerHeight) * 2 - 1;
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => window.removeEventListener("pointermove", onMove);
+  }, []);
+
+  const tmp = useMemo(() => ({ pos: new THREE.Vector3(), a: new THREE.Vector3(), b: new THREE.Vector3(), right: new THREE.Vector3() }), []);
 
   useFrame((_, rawDelta) => {
     const delta = Math.min(rawDelta, 1 / 20);
-    const n = world.beatIds.length;
-    if (!n) return;
-    const b = THREE.MathUtils.clamp(world.beat, 0, n - 1);
-    const i0 = Math.floor(b);
+    const n = path.ids.length;
+    const beat = THREE.MathUtils.clamp(world.beat, 0, Math.max(n - 1, 0));
+    const i0 = Math.floor(beat);
     const i1 = Math.min(i0 + 1, n - 1);
-    const t = world.reduced ? Math.round(b - i0) : smooth(b - i0);
+    const f = world.reduced ? Math.round(beat - i0) : smooth(beat - i0);
+    const u = n > 1 ? (i0 + f) / (n - 1) : 0;
 
-    const p0 = planFor(world.beatIds[i0]);
-    const p1 = planFor(world.beatIds[i1]) ?? p0;
-    if (!p0 || !p1) return;
+    path.curve.getPoint(u, tmp.pos);
+    const s0 = shotFor(path.ids[i0]);
+    const s1 = shotFor(path.ids[i1]);
+    tmp.a.set(...s0.target).lerp(tmp.b.set(...s1.target), f);
+    // Portrait: copy sits at the bottom, so frame the character higher (not for centred shots).
+    if (portrait) tmp.a.y -= 0.55 * ((s0.text === "center" ? 0 : 1) * (1 - f) + (s1.text === "center" ? 0 : 1) * f);
 
-    resolve(p0.shot, tmp.camA, tmp.la);
-    resolve(p1.shot, tmp.camB, tmp.lb);
-    const camTarget = tmp.camA.lerp(tmp.camB, t);
-    const lookTarget = tmp.la.lerp(tmp.lb, t);
-
-    // While he walks between marks the camera becomes a follow cam: behind his
-    // shoulder, looking where he is going. It hands back to the composed shot on arrival.
-    const walkingAway = characterState.moving && !world.reduced && world.beatIds[Math.round(b)] !== "hero";
-    follow.current += ((walkingAway ? 1 : 0) - follow.current) * Math.min(delta * 1.4, 1);
-    if (follow.current > 0.01) {
-      const c = characterState.pos;
-      const fx = Math.sin(characterState.yaw);
-      const fz = Math.cos(characterState.yaw);
-      const back = portrait ? 5.6 : 4.4;
-      tmp.followCam.set(c.x - fx * back + fz * 1.5, portrait ? 2.3 : 1.95, c.z - fz * back - fx * 1.5);
-      tmp.followLook.set(c.x + fx * 2.6, 1.2, c.z + fz * 2.6);
-      const w = follow.current * 0.8;
-      camTarget.lerp(tmp.followCam, w);
-      lookTarget.lerp(tmp.followLook, w);
-    }
-
-    // Subtle handheld parallax from the pointer, in camera space.
     if (!world.reduced) {
       tmp.right.setFromMatrixColumn(cam.matrixWorld, 0);
-      camTarget.addScaledVector(tmp.right, world.pointer.x * 0.28);
-      camTarget.y -= world.pointer.y * 0.14;
+      tmp.pos.addScaledVector(tmp.right, world.pointer.x * 0.12);
+      tmp.pos.y -= world.pointer.y * 0.06;
     }
 
-    const k = world.reduced || !init.current ? 1 : 1 - Math.exp(-delta * 2.1);
+    const k = world.reduced || !init.current ? 1 : 1 - Math.exp(-delta * 2.4);
     init.current = true;
-    cam.position.lerp(camTarget, k);
-    look.current.lerp(lookTarget, world.reduced ? 1 : 1 - Math.exp(-delta * 2.6));
+    cam.position.lerp(tmp.pos, k);
+    look.current.lerp(tmp.a, world.reduced ? 1 : 1 - Math.exp(-delta * 2.8));
     cam.lookAt(look.current);
 
-    // Keep the subject clear of the copy.
-    const side = world.beatSides[Math.round(b)] ?? "center";
+    const side = (f < 0.5 ? s0 : s1).text;
     const film = portrait ? 0 : side === "left" ? -FILM_SHIFT : side === "right" ? FILM_SHIFT : 0;
     const next = cam.filmOffset + (film - cam.filmOffset) * (world.reduced ? 1 : 1 - Math.exp(-delta * 2));
     if (Math.abs(next - cam.filmOffset) > 0.001) {

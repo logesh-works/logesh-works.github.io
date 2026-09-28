@@ -16,7 +16,7 @@ const CopyCommand = ({ command }: { command: string }) => {
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-line/10 bg-ink px-4 py-3 font-mono text-sm">
+    <div className="flex items-center justify-between gap-3 rounded-full bg-black/40 py-1.5 pl-5 pr-1.5 font-mono text-[0.8rem] backdrop-blur-md">
       <code>
         <span aria-hidden className="text-signal">$ </span>
         {command}
@@ -24,7 +24,7 @@ const CopyCommand = ({ command }: { command: string }) => {
       <button
         type="button"
         onClick={copy}
-        className="rounded-md px-2 py-1 text-xs text-muted transition-colors hover:bg-raised hover:text-fg"
+        className="t-label rounded-full px-3 py-2 text-fg/60 transition-colors hover:bg-raised hover:text-signal"
       >
         {copied ? "Copied" : "Copy"}
         <span className="sr-only"> install command</span>

@@ -1,8 +1,9 @@
 # Logesh Kumar: portfolio
 
-An immersive, scroll-driven 3D portfolio: an engineer character walks through a
-software-engineering world (system graph → experience pipelines → project
-gallery → Postman MCP pipeline → research → contact) while the page tells the story.
+An immersive, scroll-driven 3D portfolio. One engineer character stands on a
+studio stage; scrolling moves the camera around him along a spline while fixed
+text blocks swap per stop. The frame (header, toolbar, menu, panels, loader)
+follows the layout system documented in [docs/design-spec.md](docs/design-spec.md).
 
 Next.js 14 (App Router) · TypeScript · Tailwind · three.js + React Three Fiber · Lenis.
 
@@ -12,18 +13,24 @@ npm run dev      # http://localhost:3000
 npm run build && npm start
 ```
 
-Set `NEXT_PUBLIC_SITE_URL` is not needed: the canonical domain is `profile.site` in `constants/index.ts`.
+The canonical domain is `profile.site` in `constants/index.ts`.
 
 ## Where things live
 
 | Path | What |
 | --- | --- |
 | `constants/index.ts` | **All portfolio content** (the source of truth). |
-| `components/story/` | Page chapters. Each screen is a `Beat` (`data-beat`) that drives the camera. |
-| `components/experience/` | Loader, scroll controller (Lenis), navigation/HUD, sound, cursor. |
-| `components/world/` | The 3D world: `WorldCanvas`, `CameraController`, `choreography.ts` (per-beat character mark + camera shot), `stations.ts` (layout), `scenes/`. |
-| `components/world/character/` | Character system: rig contract, procedural animation, materials, model drivers. |
-| `lib/audio/` | Original generative score (Web Audio) and the music config. |
+| `docs/design-spec.md` | Design tokens, grid, type scale, motion and component specs. |
+| `app/globals.css` | Tokens, type scale, keyframes and component styles from the spec. |
+| `components/home/` | Home page: `Intro` (wordmark), `ScrollTrack` (camera stops), `Blocks` (fixed copy per stop), `HomeFooter`. |
+| `components/hud/` | Frame: `Header`, `Toolbar`, `SiteMenu`, `Panels` (timeline, profile), `Pill`, `SoundToggle`, `SoundEngine`, `Tutorials`. |
+| `components/experience/` | Loader, lazy stage mount, scroll controller (Lenis → step position). |
+| `components/world/` | The 3D stage: `WorldCanvas`, `cameraPath.ts` (one shot per stop), `CameraController`, `scenes/Stage` (cyclorama, lights, dust), `scenes/PostFX`. |
+| `components/world/character/` | Character system: rig contract, procedural animation, looks, model drivers. |
+| `lib/audio/` | Original generative score (Web Audio), music config, sound on/off. |
+
+To add or reorder a stop: add a chapter in `constants` (`chapters`), a shot in
+`components/world/cameraPath.ts`, and a `Block` in `components/home/Blocks.tsx`.
 
 ## Replacing the character with a sculpted model
 
