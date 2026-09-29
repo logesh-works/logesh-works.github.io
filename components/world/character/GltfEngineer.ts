@@ -37,8 +37,16 @@ export const loadGltfEngineer = async (config: GltfCharacterConfig): Promise<Cha
   // body: gets the whole-body motion; model: the imported scene, scaled and oriented.
   const body = new THREE.Group();
   const model = gltf.scene;
-  model.scale.setScalar(config.scale);
   model.rotation.y = config.yaw ?? 0;
+  // Fit: scale to the target height, stand on the floor, centre on the mark.
+  model.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(model);
+  const size = box.getSize(new THREE.Vector3());
+  model.scale.setScalar((config.height ?? 1.85) / Math.max(size.y, 1e-6));
+  model.updateMatrixWorld(true);
+  box.setFromObject(model);
+  const centre = box.getCenter(new THREE.Vector3());
+  model.position.set(-centre.x, -box.min.y, -centre.z);
   model.traverse((o) => {
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh) return;

@@ -15,8 +15,8 @@ import type { CharacterAction } from "./rig";
  */
 export interface GltfCharacterConfig {
   url: string;
-  /** Uniform scale so the character stands about 1.85 m tall. */
-  scale: number;
+  /** Height in metres. The model is scaled to it, stood on the floor and centred, whatever its original size or origin. */
+  height?: number;
   /** Rotation (radians) to make the model face +z. */
   yaw?: number;
   clips?: { walk: string; idle: string } & Partial<Record<CharacterAction, string>>;
@@ -26,10 +26,10 @@ export interface GltfCharacterConfig {
 }
 
 export const characterConfig: { model: GltfCharacterConfig | null } = {
-  // Logesh's monkey (Tripo export, optimised: 62k tris, 2K WebP textures, ~0.7 MB). Not rigged yet.
+  // Logesh's monkey, "The Ape in Black" (Meshy export, optimised: 78k tris, 2K WebP textures, ~1.2 MB). Not rigged yet.
   model: {
     url: "/models/engineer.glb",
-    scale: 1.85,
+    height: 1.85,
     yaw: 0,
   },
 };
