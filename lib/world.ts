@@ -6,7 +6,7 @@
 
 export type Quality = "high" | "medium" | "low";
 
-export type WorldEvent = "chapter" | "beats" | "ready" | "sound" | "theme" | "transition" | "panel" | "footer" | "drag";
+export type WorldEvent = "chapter" | "beats" | "ready" | "sound" | "theme" | "transition" | "panel" | "footer" | "drag" | "character";
 
 export type PanelId = "timeline" | "profile" | "menu" | null;
 
@@ -25,6 +25,8 @@ export const world = {
   quality: "high" as Quality,
   reduced: false,
   ready: false,
+  /** The character model has loaded and is on stage. */
+  characterReady: false,
   /** The loader has finished and the visitor is in the experience. */
   entered: false,
   soundOn: false,

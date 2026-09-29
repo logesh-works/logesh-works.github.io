@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 
-import { emit, world } from "@/lib/world";
+import { emit, on, world } from "@/lib/world";
 import { cn } from "@/lib/utils";
 
 import LoadingScreen from "./LoadingScreen";
@@ -29,7 +29,7 @@ const hasWebGL = () => {
  */
 const ExperienceRoot = () => {
   const [mode, setMode] = useState<"pending" | "webgl" | "static">("pending");
-  const [steps, setSteps] = useState({ fonts: false, chunk: false, frames: false, time: false });
+  const [steps, setSteps] = useState({ fonts: false, chunk: false, frames: false, character: false, time: false });
   const [entered, setEntered] = useState(false);
 
   useEffect(() => {
@@ -46,20 +46,22 @@ const ExperienceRoot = () => {
     }
     const minTime = window.setTimeout(() => setSteps((s) => ({ ...s, time: true })), reduced || seen ? 300 : 1800);
     document.fonts?.ready.then(() => setSteps((s) => ({ ...s, fonts: true })));
+    const offCharacter = on("character", () => setSteps((s) => ({ ...s, character: true })));
     if (webgl) loadWorld().then(() => setSteps((s) => ({ ...s, chunk: true })));
     else {
-      setSteps((s) => ({ ...s, chunk: true, frames: true }));
+      setSteps((s) => ({ ...s, chunk: true, frames: true, character: true }));
       world.ready = true;
     }
     // Never hold visitors hostage: finish loading after 9s whatever happens.
-    const bail = window.setTimeout(() => setSteps({ fonts: true, chunk: true, frames: true, time: true }), 9000);
+    const bail = window.setTimeout(() => setSteps({ fonts: true, chunk: true, frames: true, character: true, time: true }), 9000);
     return () => {
       window.clearTimeout(minTime);
       window.clearTimeout(bail);
+      offCharacter();
     };
   }, []);
 
-  const progress = 0.1 + (steps.fonts ? 0.2 : 0) + (steps.chunk ? 0.35 : 0) + (steps.frames ? 0.3 : 0) + (steps.time ? 0.05 : 0);
+  const progress = 0.1 + (steps.fonts ? 0.15 : 0) + (steps.chunk ? 0.25 : 0) + (steps.frames ? 0.15 : 0) + (steps.character ? 0.3 : 0) + (steps.time ? 0.05 : 0);
 
   const onReady = useCallback(() => setSteps((s) => ({ ...s, frames: true })), []);
   const onDone = useCallback(() => {

@@ -31,18 +31,22 @@ const Character = () => {
   useEffect(() => {
     let alive = true;
     let d: CharacterDriver | null = null;
-    const fallback = () => {
-      d = createProceduralEngineer();
-      if (alive) setDriver(d);
+    const done = (next: CharacterDriver) => {
+      d = next;
+      if (!alive) return;
+      setDriver(next);
+      world.characterReady = true;
+      emit("character");
     };
+    const fallback = () => done(createProceduralEngineer());
     if (characterConfig.model) {
       import("./GltfEngineer")
         .then(({ loadGltfEngineer }) => loadGltfEngineer(characterConfig.model!))
-        .then((g) => {
-          d = g;
-          if (alive) setDriver(g);
-        })
-        .catch(fallback);
+        .then(done)
+        .catch((err) => {
+          console.warn("Character model failed to load; using the built-in stand-in.", err);
+          fallback();
+        });
     } else {
       fallback();
     }
