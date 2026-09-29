@@ -80,6 +80,17 @@ export const actionPose = (action: CharacterAction, t: number, pulse: number): P
         wristR: [0.25, 0, 0],
         head: [0.02 - 0.03 * pulse, 0, 0],
       };
+    case "carry": // left hand in pocket, laptop held at the right side
+      return {
+        spine: [-0.02, 0.04, 0],
+        shoulderL: [0.16, 0, 0.14],
+        elbowL: [-0.5, 0, 0],
+        wristL: [0.25, 0, 0],
+        shoulderR: [0.04, 0, -0.16],
+        elbowR: [-0.14, 0, 0],
+        wristR: [0.05, 0.25, 0],
+        head: [0.02 - 0.03 * pulse, 0, 0],
+      };
     case "inspect": // right hand reaching toward the system in front of him
       return {
         spine: [-0.05, 0.08, 0],
@@ -126,14 +137,14 @@ export const actionPose = (action: CharacterAction, t: number, pulse: number): P
   }
 };
 
-const ACTIONS: CharacterAction[] = ["idle", "confident", "inspect", "present", "type", "lookUp"];
+const ACTIONS: CharacterAction[] = ["idle", "confident", "carry", "inspect", "present", "type", "lookUp"];
 
 /**
  * Blends idle, walk and weighted actions into one pose. Keeps per-action weights
  * so switching action cross-fades instead of snapping.
  */
 export class PoseMixer {
-  private weights: Record<CharacterAction, number> = { idle: 1, confident: 0, inspect: 0, present: 0, type: 0, lookUp: 0 };
+  private weights: Record<CharacterAction, number> = { idle: 1, confident: 0, carry: 0, inspect: 0, present: 0, type: 0, lookUp: 0 };
 
   compute(frame: CharacterFrame): Pose {
     const rate = Math.min(frame.delta * 2.6, 1);

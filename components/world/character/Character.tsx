@@ -4,6 +4,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
+import { WORLDS } from "@/lib/themes";
 import { emit, on, world } from "@/lib/world";
 
 import { shotFor } from "../cameraPath";
@@ -13,7 +14,6 @@ import { createProceduralEngineer } from "./ProceduralEngineer";
 import type { CharacterDriver } from "./rig";
 
 const HEAD_HEIGHT = 1.62;
-const WALK_SPEED = 1.25; // m/s equivalent for walk-in-place cadence
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 
 /**
@@ -25,7 +25,7 @@ const Character = () => {
   const group = useRef<THREE.Group>(null);
   const [driver, setDriver] = useState<CharacterDriver | null>(null);
   const { camera, gl } = useThree();
-  const motion = useRef({ phase: 0, walk: 0, yaw: 0 });
+  const motion = useRef({ phase: 0, walk: 0, yaw: 0, arrivedAt: -10 });
   const stride = characterConfig.model?.strideLength ?? 1.3;
 
   useEffect(() => {
@@ -52,12 +52,13 @@ const Character = () => {
     };
   }, []);
 
-  // Switch look: apply the colourway and flash the scene.
+  // Dress for the current world; on a switch he walks into the new world for a few seconds.
   useEffect(() => {
     if (!driver) return;
-    driver.setLook?.(world.look);
-    return on("look", () => {
-      driver.setLook?.(world.look);
+    driver.setOutfit?.(WORLDS[world.theme].character);
+    return on("theme", () => {
+      driver.setOutfit?.(WORLDS[world.theme].character);
+      motion.current.arrivedAt = performance.now();
       world.pulse = 1;
     });
   }, [driver]);
@@ -130,11 +131,18 @@ const Character = () => {
     const delta = Math.min(rawDelta, 1 / 20);
     const m = motion.current;
     const shot = shotFor(world.beatIds[Math.round(world.beat)]);
+    const style = WORLDS[world.theme].character;
+
+    // Each world has its own stance: the plain idle becomes that world's idle, and
+    // hands-in-pockets becomes carrying the laptop where he has one.
+    let action = shot.action === "idle" ? style.idle : shot.action;
+    if (style.laptop && action === "confident") action = "carry";
 
     // Walk in place: the cycle advances with time; the camera does the travelling.
-    const walking = !world.reduced && Boolean(shot.walk);
+    const arriving = performance.now() - m.arrivedAt < 3200;
+    const walking = !world.reduced && (Boolean(shot.walk) || arriving);
     m.walk += ((walking ? 1 : 0) - m.walk) * Math.min(delta * 3, 1);
-    m.phase += ((WALK_SPEED * m.walk * delta) / stride) * Math.PI * 2;
+    m.phase += ((style.walkSpeed * m.walk * delta) / stride) * Math.PI * 2;
 
     // Drag inertia, then an unhurried return to facing the visitor.
     if (!characterState.dragging) {
@@ -158,7 +166,7 @@ const Character = () => {
       delta,
       walk: m.walk,
       phase: m.phase,
-      action: shot.action,
+      action,
       lookYaw,
       lookPitch,
       pulse: world.pulse,

@@ -12,6 +12,7 @@ import { RGBShiftShader } from "three/examples/jsm/shaders/RGBShiftShader.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 
+import { WORLDS } from "@/lib/themes";
 import { world } from "@/lib/world";
 
 /**
@@ -62,7 +63,9 @@ const PostFX = ({ bloom }: { bloom: boolean }) => {
   // Priority 1 replaces R3F's own render call while bloom is on.
   useFrame((_, delta) => {
     if (!fx) return;
-    fx.pass.strength = 0.5 + world.audioLevel * 0.35 + world.pulse * 0.12;
+    // Each world has its own glow; eased so it swells with the new world's light.
+    const target = WORLDS[world.theme].scene.bloom + world.audioLevel * 0.35 + world.pulse * 0.12;
+    fx.pass.strength += (target - fx.pass.strength) * Math.min(delta * 2.4, 1);
     // Musical accents widen the fringe for a beat.
     fx.fringe.uniforms.amount.value = 0.0011 + world.pulse * 0.0012;
     fx.composer.render(delta);

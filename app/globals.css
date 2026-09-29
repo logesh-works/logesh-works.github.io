@@ -7,20 +7,26 @@
 /* ================================================================== */
 
 @layer base {
+  /* World 01: Gold Lobby (default) */
   :root,
-  :root[data-theme="black"] {
-    --ink: 15 15 15;          /* #0f0f0f page */
-    --panel: 33 33 33;        /* #212121 menu / modal panels */
-    --raised: 42 42 42;
+  :root[data-theme="lobby"] {
+    --ink: 11 9 7;
+    --panel: 30 25 20;
+    --raised: 42 35 28;
     --line: 255 255 255;      /* hairlines at low alpha */
-    --fg: 255 255 255;
-    --muted: 150 150 150;     /* secondary text */
-    --accent: 156 116 67;     /* #9c7443 bronze */
-    --accent-deep: 121 74 47; /* #794a2f glow */
+    --fg: 255 250 243;
+    --muted: 160 150 138;
+    --accent: 214 158 82;     /* gold */
+    --accent-deep: 140 86 32;
 
     --noise-opacity: 0.05;
-    --button-bg: rgb(0 0 0 / 0.25);
+    --button-bg: rgb(0 0 0 / 0.3);
     --overlay: rgb(0 0 0 / 0.6);
+
+    /* Type treatment: extended, heavy display; wide-tracked eyebrows */
+    --display-wdth: 125;
+    --display-weight: 800;
+    --eyebrow-font: var(--font-archivo), Helvetica, Arial, sans-serif;
 
     --ease: cubic-bezier(0.165, 0.84, 0.44, 1);
     --ease-inout: cubic-bezier(0.77, 0, 0.175, 1);
@@ -34,6 +40,38 @@
     color-scheme: dark;
   }
 
+  /* World 02: Engine Room: cool navy, electric blue accent, technical mono eyebrows */
+  :root[data-theme="engine"] {
+    --ink: 5 8 15;
+    --panel: 13 20 33;
+    --raised: 21 30 48;
+    --fg: 236 242 252;
+    --muted: 138 152 176;
+    --accent: 104 166 255;
+    --accent-deep: 36 86 170;
+    --noise-opacity: 0.045;
+    --button-bg: rgb(4 10 22 / 0.4);
+    --display-wdth: 118;
+    --display-weight: 700;
+    --eyebrow-font: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  /* World 03: Dusk Studio: warm plum-brown, peach accent, softer lighter display */
+  :root[data-theme="dusk"] {
+    --ink: 20 13 11;
+    --panel: 40 28 24;
+    --raised: 54 38 32;
+    --fg: 255 243 234;
+    --muted: 176 152 140;
+    --accent: 244 166 128;
+    --accent-deep: 168 84 60;
+    --noise-opacity: 0.06;
+    --button-bg: rgb(30 16 12 / 0.35);
+    --display-wdth: 108;
+    --display-weight: 700;
+    --eyebrow-font: var(--font-archivo), Helvetica, Arial, sans-serif;
+  }
+
   @media (min-width: 1024px) {
     :root {
       --edge: 50px;
@@ -42,6 +80,7 @@
 
   html {
     background-color: rgb(var(--ink));
+    transition: background-color 0.9s var(--ease);
     -webkit-text-size-adjust: 100%;
   }
 
@@ -85,14 +124,14 @@ html[data-overlay] body {
 @layer components {
   .t-h1 {
     @apply wide font-display uppercase;
-    font-weight: 800;
+    font-weight: var(--display-weight);
     font-size: 1.5rem;
     line-height: 0.92;
     letter-spacing: -0.02em;
   }
   .t-h2 {
     @apply wide font-display uppercase;
-    font-weight: 800;
+    font-weight: var(--display-weight);
     font-size: 1.125rem;
     line-height: 0.95;
     letter-spacing: -0.02em;
@@ -109,7 +148,8 @@ html[data-overlay] body {
     font-weight: 800;
   }
   .t-eyebrow {
-    @apply wide font-display uppercase;
+    @apply wide uppercase;
+    font-family: var(--eyebrow-font);
     font-weight: 400;
     font-size: 0.5625rem;
     line-height: 1;
@@ -700,5 +740,56 @@ html:not(.js) .toolbar {
   }
   .loader {
     transition-duration: 0.3s;
+  }
+}
+
+/* ================================================================== */
+/* World switch transition                                             */
+/* ================================================================== */
+
+.world-veil {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.65s var(--ease-inout);
+}
+.world-veil[data-phase="out"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+.world-veil[data-phase="in"] {
+  opacity: 0;
+  transition-duration: 0.9s;
+}
+.world-veil .world-title {
+  opacity: 0;
+  transform: translate3d(0, 24px, 0);
+  transition: opacity 0.5s var(--ease), transform 0.8s var(--ease);
+}
+.world-veil[data-phase="out"] .world-title {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.15s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .world-veil,
+  .world-veil .world-title {
+    transition: none;
+  }
+}
+
+/* Soft halo of the world's ink behind each text block, so busy sets never cut through the copy. */
+@media (min-width: 1024px) {
+  .js .cblock::before {
+    content: "";
+    position: absolute;
+    inset: -18% -22%;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(closest-side, rgb(var(--ink) / 0.82), rgb(var(--ink) / 0.5) 55%, transparent);
+    opacity: 0;
+    transition: opacity 0.6s var(--ease);
+  }
+  .js .cblock[data-active]::before {
+    opacity: 1;
   }
 }

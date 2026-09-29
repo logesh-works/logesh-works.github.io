@@ -9,20 +9,34 @@
 
 import { audioConfig } from "./config";
 
-const BPM = 72;
-const EIGHTH = 60 / BPM / 2;
 const STEPS_PER_CHORD = 16; // two bars
 
 const midi = (n: number) => 440 * Math.pow(2, (n - 69) / 12);
 
-// D minor → Bb → F → C: dark, wide, resolved-but-open.
-const CHORDS = [
-  { bass: 38, pad: [57, 60, 64, 65] },
-  { bass: 34, pad: [58, 62, 65, 69] },
-  { bass: 41, pad: [57, 60, 64, 67] },
-  { bass: 36, pad: [55, 62, 64, 67] },
-];
-const PLUCK_SCALE = [74, 77, 79, 81, 84, 86, 89];
+/** Musical character of a world: key, tempo, pad timbre, brightness and pluck density. */
+export interface Mood {
+  bpm: number;
+  chords: { bass: number; pad: number[] }[];
+  pluck: number[];
+  padWave: OscillatorType;
+  brightness: number;
+  pluckRate: number;
+}
+
+// Default: D minor → Bb → F → C, dark, wide, resolved-but-open.
+const DEFAULT_MOOD: Mood = {
+  bpm: 72,
+  chords: [
+    { bass: 38, pad: [57, 60, 64, 65] },
+    { bass: 34, pad: [58, 62, 65, 69] },
+    { bass: 41, pad: [57, 60, 64, 67] },
+    { bass: 36, pad: [55, 62, 64, 67] },
+  ],
+  pluck: [74, 77, 79, 81, 84, 86, 89],
+  padWave: "sawtooth",
+  brightness: 0.35,
+  pluckRate: 0.2,
+};
 
 type AccentKind = "pluck" | "beat" | "chord";
 
@@ -40,6 +54,8 @@ class Ambient {
   private step = 0;
   private nextTime = 0;
   private depth = 0;
+  private mood: Mood = DEFAULT_MOOD;
+  private delay: DelayNode | null = null;
   private levelBuf: Float32Array | null = null;
   private metering = false;
   private track: HTMLAudioElement | null = null;
@@ -100,12 +116,29 @@ class Ambient {
     await ctx.suspend();
   }
 
+  private get eighth() {
+    return 60 / this.mood.bpm / 2;
+  }
+
+  private filterTarget() {
+    return 260 + this.mood.brightness * 900 + this.depth * 1900;
+  }
+
   /** 0 at the top of the page → 1 at the end: the pad opens up as you go deeper. */
   setDepth(d: number) {
     this.depth = Math.min(Math.max(d, 0), 1);
     if (!this.ctx) return;
+    this.padFilter.frequency.setTargetAtTime(this.filterTarget(), this.ctx.currentTime, 0.8);
+  }
+
+  /** Switch the score to another world's key, tempo and colour; the new chord starts right away. */
+  setMood(mood: Mood) {
+    this.mood = mood;
+    if (!this.ctx) return;
     const t = this.ctx.currentTime;
-    this.padFilter.frequency.setTargetAtTime(420 + this.depth * 1900, t, 0.8);
+    this.padFilter.frequency.setTargetAtTime(this.filterTarget(), t, 0.6);
+    this.delay?.delayTime.setTargetAtTime(this.eighth * 1.5, t, 0.2);
+    this.step = Math.ceil(this.step / STEPS_PER_CHORD) * STEPS_PER_CHORD;
   }
 
   /** A soft filtered-noise swell, played on chapter changes. */
@@ -164,7 +197,7 @@ class Ambient {
     // Pad bus with a slowly breathing low-pass.
     this.padFilter = ctx.createBiquadFilter();
     this.padFilter.type = "lowpass";
-    this.padFilter.frequency.value = 420;
+    this.padFilter.frequency.value = this.filterTarget();
     this.padFilter.Q.value = 0.6;
     const lfo = ctx.createOscillator();
     lfo.frequency.value = 0.045;
@@ -182,7 +215,8 @@ class Ambient {
     this.pluckBus = ctx.createGain();
     this.pluckBus.gain.value = 0.11;
     const delay = ctx.createDelay(2);
-    delay.delayTime.value = EIGHTH * 1.5;
+    delay.delayTime.value = this.eighth * 1.5;
+    this.delay = delay;
     const fb = ctx.createGain();
     fb.gain.value = 0.36;
     const fbTone = ctx.createBiquadFilter();
@@ -218,15 +252,16 @@ class Ambient {
     const ctx = this.ctx!;
     while (this.nextTime < ctx.currentTime + 0.25) {
       this.playStep(this.step, this.nextTime);
-      this.nextTime += EIGHTH;
+      this.nextTime += this.eighth;
       this.step++;
     }
   }
 
   private playStep(step: number, t: number) {
     const local = step % STEPS_PER_CHORD;
-    const chord = CHORDS[Math.floor(step / STEPS_PER_CHORD) % CHORDS.length];
-    const chordLen = STEPS_PER_CHORD * EIGHTH;
+    const { chords, pluck, pluckRate } = this.mood;
+    const chord = chords[Math.floor(step / STEPS_PER_CHORD) % chords.length];
+    const chordLen = STEPS_PER_CHORD * this.eighth;
 
     if (local === 0) {
       chord.pad.forEach((n) => this.padVoice(midi(n), t, chordLen));
@@ -240,9 +275,9 @@ class Ambient {
         this.accent("beat", t);
       }
     }
-    const chance = 0.18 + this.depth * 0.22;
+    const chance = pluckRate + this.depth * 0.22;
     if (local % 2 === 1 ? Math.random() < chance * 0.5 : Math.random() < chance) {
-      const n = PLUCK_SCALE[Math.floor(Math.random() * PLUCK_SCALE.length)];
+      const n = pluck[Math.floor(Math.random() * pluck.length)];
       this.pluck(midi(n), t);
       this.accent("pluck", t);
     }
@@ -258,7 +293,7 @@ class Ambient {
     env.connect(this.padFilter);
     for (const detune of [-8, 7]) {
       const o = ctx.createOscillator();
-      o.type = "sawtooth";
+      o.type = this.mood.padWave;
       o.frequency.value = freq;
       o.detune.value = detune;
       o.connect(env);

@@ -9,7 +9,7 @@ import { emit, world, type Quality } from "@/lib/world";
 import CameraController from "./CameraController";
 import Character from "./character/Character";
 import PostFX from "./scenes/PostFX";
-import Stage from "./scenes/Stage";
+import Worlds from "./scenes/Worlds";
 
 const TIERS: Record<Quality, { dpr: number; dust: number }> = {
   high: { dpr: 1.75, dust: 420 },
@@ -81,7 +81,7 @@ const WorldCanvas = ({ onReady }: { onReady: () => void }) => {
           onReady();
         }}
       />
-      <Stage dust={tier.dust} />
+      <Worlds dust={tier.dust} reflections={quality === "high"} />
       <PostFX bloom={quality !== "low"} />
       <CameraController />
       <Character />

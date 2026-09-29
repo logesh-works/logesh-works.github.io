@@ -61,7 +61,7 @@ const config: Config = {
     // Width axis of Archivo: display type runs wide like the reference's extended faces.
     plugin(({ addUtilities }) => {
       addUtilities({
-        ".wide": { "font-variation-settings": '"wdth" 125' },
+        ".wide": { "font-variation-settings": '"wdth" var(--display-wdth, 125)' },
         ".semi-wide": { "font-variation-settings": '"wdth" 112' },
       });
     }),

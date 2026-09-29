@@ -5,8 +5,10 @@ import { usePathname } from "next/navigation";
 import type { CSSProperties } from "react";
 
 import { chapters, moreLinks, profile, socials } from "@/constants";
+import { WORLDS } from "@/lib/themes";
 import { useWorld } from "@/lib/useWorld";
 import { setPanel } from "@/lib/world";
+import { switchWorld } from "@/lib/worldSwitch";
 import { cn } from "@/lib/utils";
 
 import { IconArrow, IconClose, IconDoc } from "./icons";
@@ -19,7 +21,7 @@ const i = (n: number) => ({ "--i": n }) as CSSProperties;
 const SiteMenu = () => {
   const pathname = usePathname();
   const onHome = pathname === "/";
-  const { chapterIndex } = useWorld("chapter");
+  const { chapterIndex, theme } = useWorld("chapter", "theme");
   const close = () => setPanel(null);
   const href = (id: string) => (onHome ? `#${id}` : `/#${id}`);
 
@@ -60,6 +62,32 @@ const SiteMenu = () => {
           </nav>
 
           <div className="grid gap-10 sm:grid-cols-2 lg:w-col-4 lg:grid-cols-1 lg:pt-3">
+            <div>
+              <p className="t-eyebrow mb-5">Worlds</p>
+              <ul className="space-y-3">
+                {WORLDS.map((w, k) => (
+                  <li key={w.id} className="stagger" style={i(k)}>
+                    <span>
+                      <button
+                        type="button"
+                        aria-pressed={k === theme}
+                        onClick={() => {
+                          close();
+                          switchWorld(k);
+                        }}
+                        className={cn(
+                          "t-label flex items-baseline gap-3 transition-colors hover:text-signal",
+                          k === theme ? "text-signal" : "text-fg/70"
+                        )}
+                      >
+                        <span className="text-fg/40">{w.index}</span>
+                        {w.name}
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
             <ul className="t-label space-y-6 text-fg/50">
               {socials.map((s, k) => (
                 <li key={s.label} className="stagger" style={i(k + 1)}>

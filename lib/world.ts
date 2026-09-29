@@ -6,7 +6,7 @@
 
 export type Quality = "high" | "medium" | "low";
 
-export type WorldEvent = "chapter" | "beats" | "ready" | "sound" | "look" | "panel" | "footer" | "drag";
+export type WorldEvent = "chapter" | "beats" | "ready" | "sound" | "theme" | "transition" | "panel" | "footer" | "drag";
 
 export type PanelId = "timeline" | "profile" | "menu" | null;
 
@@ -28,8 +28,12 @@ export const world = {
   /** The loader has finished and the visitor is in the experience. */
   entered: false,
   soundOn: false,
-  /** Index of the character's current look (outfit colourway). */
-  look: 0,
+  /** Index into WORLDS (lib/themes.ts): character, set, light, UI and score together. */
+  theme: 0,
+  /** World switch in progress: "out" = fading to black, "in" = revealing the new world. */
+  transition: null as "out" | "in" | null,
+  /** World being switched to while the transition runs. */
+  pendingTheme: 0,
   /** Overlay currently open, if any. */
   panel: null as PanelId,
   /** The footer has scrolled into view: fixed text blocks step aside. */

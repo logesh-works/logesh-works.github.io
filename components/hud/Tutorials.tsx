@@ -37,7 +37,7 @@ const Tutorials = () => {
       <p
         aria-hidden
         className={cn(
-          "pointer-events-none fixed right-[calc(var(--edge)+var(--col)*2)] top-[34vh] z-[60] hidden items-center gap-2.5 rounded-full bg-black/25 px-4 py-2.5 text-[0.8rem] backdrop-blur-md transition-all duration-500 ease-out lg:flex",
+          "pointer-events-none fixed bottom-[112px] left-edge z-[60] hidden items-center gap-2.5 rounded-full bg-black/25 px-4 py-2.5 text-[0.8rem] backdrop-blur-md transition-all duration-500 ease-out lg:flex",
           soundHint && !soundOn ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
         )}
       >
@@ -50,7 +50,7 @@ const Tutorials = () => {
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none fixed inset-x-0 bottom-[118px] z-[60] flex flex-col items-center gap-3 transition-opacity duration-500 ease-out lg:bottom-[120px]",
+          "pointer-events-none fixed inset-x-0 bottom-[118px] z-[60] flex flex-col items-center gap-3 transition-opacity duration-500 ease-out lg:bottom-[150px]",
           opening ? "opacity-100" : "opacity-0"
         )}
       >

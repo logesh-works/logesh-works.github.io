@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 import type { GltfCharacterConfig } from "./config";
-import type { CharacterAction, CharacterDriver, CharacterFrame } from "./rig";
+import type { CharacterAction, CharacterDriver, CharacterFrame, Outfit } from "./rig";
 
 /**
  * Drives a rigged GLB with the same CharacterFrame the procedural stand-in uses:
@@ -26,7 +26,7 @@ export const loadGltfEngineer = async (config: GltfCharacterConfig): Promise<Cha
   const walk = mixer.clipAction(clip(config.clips.walk)!);
   const idleClip = clip(config.clips.idle)!;
   const actions = new Map<CharacterAction, THREE.AnimationAction>();
-  (["idle", "confident", "inspect", "present", "type", "lookUp"] as CharacterAction[]).forEach((a) => {
+  (["idle", "confident", "carry", "inspect", "present", "type", "lookUp"] as CharacterAction[]).forEach((a) => {
     actions.set(a, mixer.clipAction(clip(config.clips[a]) ?? idleClip));
   });
   walk.play();
@@ -60,6 +60,20 @@ export const loadGltfEngineer = async (config: GltfCharacterConfig): Promise<Cha
         head.rotation.y += frame.lookYaw * 0.8;
         head.rotation.x += frame.lookPitch * 0.8;
       }
+    },
+    // Per-world outfit: materials named Suit / Vest / Shirt / Tie / PocketSquare / Shoe are
+    // retinted, and an object named Laptop is shown only in worlds where he carries it.
+    setOutfit(o: Outfit) {
+      const colours: Record<string, string> = { Suit: o.suit, Vest: o.vest, Shirt: o.shirt, Tie: o.tie, PocketSquare: o.square, Shoe: o.shoe };
+      model.traverse((obj) => {
+        if (obj.name === "Laptop") obj.visible = o.laptop;
+        const mesh = obj as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).forEach((mat) => {
+          const c = colours[mat.name];
+          if (c && "color" in mat) (mat as THREE.MeshStandardMaterial).color.set(c);
+        });
+      });
     },
     dispose() {
       mixer.stopAllAction();
