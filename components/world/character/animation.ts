@@ -12,7 +12,7 @@ type J = [number, number, number];
 const clamp01 = (v: number) => Math.min(Math.max(v, 0), 1);
 
 /** A natural, unhurried walk: counter-rotating hips and shoulders, rolling knees and ankles. */
-export const walkPose = (phase: number): Pose => {
+const walkPose = (phase: number): Pose => {
   const s = Math.sin(phase);
   const c = Math.cos(phase);
   const kneeL = 0.06 + 0.78 * Math.pow(clamp01(c), 1.4) + 0.1 * clamp01(-s);
@@ -41,7 +41,7 @@ export const walkPose = (phase: number): Pose => {
 };
 
 /** Standing still: slow breathing, a gentle weight shift, relaxed arms. */
-export const idlePose = (t: number): Pose => {
+const idlePose = (t: number): Pose => {
   const breath = Math.sin(t * 1.35);
   const sway = Math.sin(t * 0.45);
   return {
@@ -67,7 +67,7 @@ export const idlePose = (t: number): Pose => {
 };
 
 /** Poses layered over idle once he has arrived somewhere. Only listed joints are affected. */
-export const actionPose = (action: CharacterAction, t: number, pulse: number): Pose => {
+const actionPose = (action: CharacterAction, t: number, pulse: number): Pose => {
   switch (action) {
     case "confident": // hands in pockets, settled stance
       return {
@@ -132,19 +132,42 @@ export const actionPose = (action: CharacterAction, t: number, pulse: number): P
         shoulderR: [0.38, 0, 0.1],
         elbowR: [-0.75, 0, 0],
       };
+    case "wave": // right arm up, forearm waving hello, head tilted warmly
+      return {
+        spine: [-0.02, -0.06, 0.03],
+        neck: [0, 0, 0.04],
+        head: [-0.04, 0, 0.1],
+        shoulderR: [-0.15, 0, -1.4],
+        elbowR: [0, 0, -1.25 + 0.32 * Math.sin(t * 7.5)],
+        wristR: [0, 0, 0.15 * Math.sin(t * 7.5 + 0.6)],
+        shoulderL: [0.05, 0, 0.1],
+        elbowL: [-0.2, 0, 0],
+      };
+    case "think": // right hand to the chin, left arm across the waist, gaze up and away
+      return {
+        spine: [0.04, 0.06, 0],
+        neck: [-0.05, 0.08, 0],
+        head: [-0.14, 0.18, 0.06],
+        shoulderR: [-0.95, 0, 0.32],
+        elbowR: [-2.05, 0, 0],
+        wristR: [0.2 + 0.04 * Math.sin(t * 0.8), 0, 0],
+        shoulderL: [-0.35, 0, -0.35],
+        elbowL: [-1.35, 0, 0],
+        wristL: [0.1, 0, 0],
+      };
     default:
       return {};
   }
 };
 
-const ACTIONS: CharacterAction[] = ["idle", "confident", "carry", "inspect", "present", "type", "lookUp"];
+const ACTIONS: CharacterAction[] = ["idle", "confident", "carry", "inspect", "present", "type", "lookUp", "wave", "think"];
 
 /**
  * Blends idle, walk and weighted actions into one pose. Keeps per-action weights
  * so switching action cross-fades instead of snapping.
  */
 export class PoseMixer {
-  private weights: Record<CharacterAction, number> = { idle: 1, confident: 0, carry: 0, inspect: 0, present: 0, type: 0, lookUp: 0 };
+  private weights: Record<CharacterAction, number> = { idle: 1, confident: 0, carry: 0, inspect: 0, present: 0, type: 0, lookUp: 0, wave: 0, think: 0 };
 
   compute(frame: CharacterFrame): Pose {
     const rate = Math.min(frame.delta * 2.6, 1);

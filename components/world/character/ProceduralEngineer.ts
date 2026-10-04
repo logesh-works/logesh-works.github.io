@@ -2,7 +2,7 @@ import * as THREE from "three";
 
 import { PoseMixer } from "./animation";
 import { createCharacterMaterials } from "./materials";
-import type { CharacterDriver, CharacterFrame, JointName, Outfit } from "./rig";
+import type { CharacterDriver, CharacterFrame, JointName } from "./rig";
 
 type V = [number, number, number];
 
@@ -185,7 +185,6 @@ export const createProceduralEngineer = (): CharacterDriver => {
   }
 
   // --- Arms ------------------------------------------------------------------
-  let laptop: THREE.Object3D | null = null;
   const arm = (side: 1 | -1) => {
     const s = side === 1 ? "L" : "R";
     const shoulder = joint(S, [0.205 * side, 0.43, 0]);
@@ -199,17 +198,6 @@ export const createProceduralEngineer = (): CharacterDriver => {
     wrist.add(mesh(sphere, m.skin, [0, -0.06, 0.006], [0.042, 0.058, 0.03]));
     wrist.add(mesh(cap(0.018, 0.05), m.skin, [0, -0.115, 0.012], [1.8, 1, 1])); // fingers
     wrist.add(mesh(cap(0.013, 0.034), m.skin, [0.036 * -side, -0.048, 0.022], [1, 1, 1], [0.5, 0, 0.6 * side])); // thumb
-    if (side === -1) {
-      // Laptop carried at his right side (shown in worlds that call for it).
-      const lap = new THREE.Group();
-      lap.position.set(-0.012, -0.13, 0.05);
-      lap.rotation.set(0.18, 0, 0);
-      lap.add(mesh(box(0.018, 0.23, 0.32), m.laptop));
-      lap.add(mesh(sphereLo, m.glint, [-0.0095, 0.02, 0.02], [0.0005, 0.014, 0.014]));
-      lap.visible = false;
-      wrist.add(lap);
-      laptop = lap;
-    }
     J[`shoulder${s}` as JointName] = shoulder;
     J[`elbow${s}` as JointName] = elbow;
     J[`wrist${s}` as JointName] = wrist;
@@ -273,15 +261,6 @@ export const createProceduralEngineer = (): CharacterDriver => {
       // Lids rest open (bright, attentive eyes like the reference), follow the gaze, roll down to blink.
       const lidRest = -0.55 + gaze.x * 0.6;
       lids.forEach((l) => (l.rotation.x = 1.45 + (lidRest - 1.45) * open));
-    },
-    setOutfit(o: Outfit) {
-      m.suit.color.set(o.suit);
-      m.vest.color.set(o.vest);
-      m.shirt.color.set(o.shirt);
-      m.tie.color.set(o.tie);
-      m.square.color.set(o.square);
-      m.shoe.color.set(o.shoe);
-      if (laptop) laptop.visible = o.laptop;
     },
     dispose() {
       geos.forEach((g) => g.dispose());

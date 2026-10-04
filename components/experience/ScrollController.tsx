@@ -70,18 +70,41 @@ const ScrollController = ({ locked }: { locked: boolean }) => {
 
     let lenis: Lenis | null = null;
     if (!reduced) {
-      lenis = new Lenis({ lerp: 0.08, smoothWheel: true, anchors: true, autoRaf: true });
+      lenis = new Lenis({ lerp: 0.1, smoothWheel: true, autoRaf: true });
       lenis.on("scroll", onScroll);
       lenisRef.current = lenis;
     }
     window.addEventListener("scroll", onScroll, { passive: true });
 
+    // Every jump (menu, links, keyboard focus) moves the same way: an ease in and out
+    // whose length grows with the distance, so a jump one section away feels like a
+    // flick of the wheel and a jump across the page like a longer glide, never a teleport.
+    const glide = (y: number) => {
+      if (!lenis) {
+        window.scrollTo(0, y);
+        return;
+      }
+      const screens = Math.abs(y - window.scrollY) / window.innerHeight;
+      const duration = Math.min(0.9 + screens * 0.18, 2.4);
+      lenis.scrollTo(y, { duration, easing: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2) });
+    };
     nav.toBeat = (id: string) => {
       const el = document.getElementById(id);
       if (!el) return;
-      if (lenis) lenis.scrollTo(el, { duration: 1.6 });
-      else el.scrollIntoView();
+      glide(el.getBoundingClientRect().top + window.scrollY);
     };
+    // Same-page hash links (the menu's chapters) take the same glide.
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
+      const a = (e.target as Element | null)?.closest?.("a[href]");
+      const href = a?.getAttribute("href") ?? "";
+      const m = href.match(/^\/?#(.+)$/);
+      if (!m || window.location.pathname !== "/" || !document.getElementById(m[1])) return;
+      e.preventDefault();
+      history.replaceState(null, "", `#${m[1]}`);
+      nav.toBeat(m[1]);
+    };
+    document.addEventListener("click", onClick);
 
     // Overlays freeze the page behind them.
     const offPanel = on("panel", () => {
@@ -97,12 +120,15 @@ const ScrollController = ({ locked }: { locked: boolean }) => {
 
     return () => {
       cancelAnimationFrame(frame);
+      document.removeEventListener("click", onClick);
       offPanel();
       ro.disconnect();
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", onScroll);
       lenis?.destroy();
       lenisRef.current = null;
+      // Don't keep the torn-down scroller (and this page) reachable from the shared nav.
+      nav.toBeat = (id: string) => document.getElementById(id)?.scrollIntoView();
     };
   }, []);
 

@@ -7,112 +7,108 @@ import * as THREE from "three";
 import { WORLDS } from "@/lib/themes";
 import { emit, on, world } from "@/lib/world";
 
-import { shotFor } from "../cameraPath";
 import { characterState } from "../characterState";
-import { characterConfig } from "./config";
+import { compileQuietly, uploadTexturesQuietly } from "../compile";
+import { characterConfigs } from "./config";
 import { createProceduralEngineer } from "./ProceduralEngineer";
 import type { CharacterDriver } from "./rig";
 
 const HEAD_HEIGHT = 1.62;
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 
+/** Which worlds' characters have loaded. The loader waits for the current world's. */
+const loaded = new Set<number>();
+const markReady = () => {
+  if (world.characterReady || !loaded.has(world.theme)) return;
+  world.characterReady = true;
+  emit("character");
+};
+
 /**
- * The engineer, standing on one mark at the centre of the stage. Each scroll step
- * sets what he is doing (idle, inspecting, presenting, walking in place); he always
- * looks toward the camera, and the visitor can drag him round with the mouse.
+ * One world's character, acting out the journey: walking between the steps' marks
+ * as the visitor scrolls, and gesturing at each one (waving, typing, presenting,
+ * thinking). They keep looking around on their own, glance toward the visitor's
+ * cursor, and can be dragged round with the mouse.
  */
-const Character = () => {
+const Character = ({ index }: { index: number }) => {
   const group = useRef<THREE.Group>(null);
   const [driver, setDriver] = useState<CharacterDriver | null>(null);
-  const { camera, gl } = useThree();
-  const motion = useRef({ phase: 0, walk: 0, yaw: 0, arrivedAt: -10 });
-  const stride = characterConfig.model?.strideLength ?? 1.3;
+  const { camera, gl, scene } = useThree();
+  const motion = useRef({ yaw: 0 });
+  const look = useRef({ x: 0, y: 0 });
+  const shadow = useRef<THREE.Mesh>(null);
 
   useEffect(() => {
     let alive = true;
     let d: CharacterDriver | null = null;
-    const done = (next: CharacterDriver) => {
+    const done = async (next: CharacterDriver) => {
       d = next;
+      if (!alive) {
+        next.dispose();
+        return;
+      }
+      // Its shaders are ready before it steps on stage, so its first frame never stalls.
+      // (If the stage is torn down meanwhile, the cleanup below disposes it.)
+      await compileQuietly(gl, next.root, camera, scene, () => alive);
+      await uploadTexturesQuietly(gl, next.root, () => alive);
       if (!alive) return;
       setDriver(next);
-      world.characterReady = true;
-      emit("character");
+      loaded.add(index);
+      world.loadedWorlds.add(index);
+      emit("loaded");
+      markReady();
     };
-    const fallback = () => done(createProceduralEngineer());
-    if (characterConfig.model) {
+    let started = false;
+    const load = () => {
+      if (started || !alive) return;
+      started = true;
       import("./GltfEngineer")
-        .then(({ loadGltfEngineer }) => loadGltfEngineer(characterConfig.model!))
+        .then(({ loadGltfEngineer }) => loadGltfEngineer(characterConfigs[WORLDS[index].id]))
         .then(done)
         .catch((err) => {
-          console.warn("Character model failed to load; using the built-in stand-in.", err);
-          fallback();
+          console.warn(`${WORLDS[index].name}: character model failed to load; using the built-in stand-in.`, err);
+          done(createProceduralEngineer());
         });
-    } else {
-      fallback();
-    }
+    };
+    // The current world's character loads up front. The next world's follows quietly a few
+    // seconds after the visitor is in, so switching to it never waits; any other world's
+    // loads the moment a switch to it starts.
+    const current = () => {
+      if (index === world.theme) load();
+    };
+    current();
+    let preload = 0;
+    const queueNext = () => {
+      window.clearTimeout(preload);
+      if (!world.entered || index !== (world.theme + 1) % WORLDS.length) return;
+      preload = window.setTimeout(() => {
+        // An animated page is rarely idle, so the idle callback gets a deadline.
+        const idle = (window as Window & { requestIdleCallback?: (cb: () => void, o: { timeout: number }) => void }).requestIdleCallback;
+        if (idle) idle(load, { timeout: 1500 });
+        else load();
+      }, 3000);
+    };
+    queueNext();
+    const offs = [
+      on("theme", () => {
+        markReady();
+        current();
+        queueNext();
+      }),
+      on("ready", queueNext),
+      on("transition", () => {
+        if (world.transition && world.pendingTheme === index) load();
+      }),
+    ];
     return () => {
       alive = false;
+      window.clearTimeout(preload);
+      offs.forEach((off) => off());
+      loaded.delete(index);
+      world.loadedWorlds.delete(index);
       d?.dispose();
     };
-  }, []);
-
-  // Dress for the current world; on a switch he walks into the new world for a few seconds.
-  useEffect(() => {
-    if (!driver) return;
-    driver.setOutfit?.(WORLDS[world.theme].character);
-    return on("theme", () => {
-      driver.setOutfit?.(WORLDS[world.theme].character);
-      motion.current.arrivedAt = performance.now();
-      world.pulse = 1;
-    });
-  }, [driver]);
-
-  // Drag to rotate (mouse and pen only, so touch keeps scrolling the page).
-  useEffect(() => {
-    const el = gl.domElement;
-    let lastX = 0;
-    let lastT = 0;
-    const down = (e: PointerEvent) => {
-      if (e.pointerType === "touch" || e.button !== 0) return;
-      characterState.dragging = true;
-      characterState.dragVelocity = 0;
-      lastX = e.clientX;
-      lastT = performance.now();
-      el.style.cursor = "grabbing";
-      if (!world.dragged) {
-        world.dragged = true;
-        emit("drag");
-      }
-    };
-    const move = (e: PointerEvent) => {
-      if (!characterState.dragging) return;
-      const now = performance.now();
-      const dx = e.clientX - lastX;
-      const d = (dx / window.innerWidth) * Math.PI * 1.6;
-      characterState.dragYaw += d;
-      characterState.dragVelocity = d / Math.max((now - lastT) / 1000, 1 / 120);
-      characterState.lastDrag = now;
-      lastX = e.clientX;
-      lastT = now;
-    };
-    const up = () => {
-      if (!characterState.dragging) return;
-      characterState.dragging = false;
-      el.style.cursor = "grab";
-    };
-    el.style.cursor = "grab";
-    el.style.touchAction = "pan-y";
-    el.addEventListener("pointerdown", down);
-    window.addEventListener("pointermove", move, { passive: true });
-    window.addEventListener("pointerup", up);
-    window.addEventListener("pointercancel", up);
-    return () => {
-      el.removeEventListener("pointerdown", down);
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      window.removeEventListener("pointercancel", up);
-    };
-  }, [gl]);
+  }, [index, gl, camera, scene]);
 
   const shadowTex = useMemo(() => {
     const c = document.createElement("canvas");
@@ -132,47 +128,39 @@ const Character = () => {
   useFrame((state, rawDelta) => {
     const g = group.current;
     if (!g || !driver) return;
+    // Only the world on screen (and the one being revealed) needs animating.
+    if (world.theme !== index && !(world.transition && world.pendingTheme === index)) return;
     const delta = Math.min(rawDelta, 1 / 20);
     const m = motion.current;
-    const shot = shotFor(world.beatIds[Math.round(world.beat)]);
-    const style = WORLDS[world.theme].character;
+    const cs = characterState;
+    g.position.set(cs.x, 0, cs.z);
+    shadow.current?.position.set(cs.x, 0.004, cs.z);
 
-    // Each world has its own stance: the plain idle becomes that world's idle, and
-    // hands-in-pockets becomes carrying the laptop where he has one.
-    let action = shot.action === "idle" ? style.idle : shot.action;
-    if (style.laptop && action === "confident") action = "carry";
-
-    // Walk in place: the cycle advances with time; the camera does the travelling.
-    const arriving = performance.now() - m.arrivedAt < 3200;
-    const walking = !world.reduced && (Boolean(shot.walk) || arriving);
-    m.walk += ((walking ? 1 : 0) - m.walk) * Math.min(delta * 3, 1);
-    m.phase += ((style.walkSpeed * m.walk * delta) / stride) * Math.PI * 2;
-
-    // Drag inertia, then an unhurried return to facing the visitor.
-    if (!characterState.dragging) {
-      characterState.dragYaw += characterState.dragVelocity * delta;
-      characterState.dragVelocity *= Math.exp(-delta * 4);
-      if (performance.now() - characterState.lastDrag > 2500) characterState.dragYaw *= Math.exp(-delta * 0.9);
-    }
-
-    // Body turns partly toward the camera so every shot reads as a portrait.
-    const camYaw = Math.atan2(camera.position.x, camera.position.z);
-    const target = camYaw * 0.45 + characterState.dragYaw;
-    m.yaw += wrap(target - m.yaw) * Math.min(delta * (world.reduced ? 60 : 2.6), 1);
+    // Walking: face the way they're going. Standing: turn partly toward the camera,
+    // so every shot reads as a portrait (and the visitor can drag them round).
+    const camYaw = Math.atan2(camera.position.x - cs.x, camera.position.z - cs.z);
+    const facing = camYaw * 0.45 + cs.dragYaw;
+    const target = facing + wrap(cs.heading + cs.dragYaw - facing) * cs.walk;
+    m.yaw += wrap(target - m.yaw) * Math.min(delta * (world.reduced ? 60 : 2.6 + cs.walk * 2), 1);
     g.rotation.y = m.yaw;
 
-    tmp.set(camera.position.x, camera.position.y - HEAD_HEIGHT, camera.position.z);
-    const lookYaw = THREE.MathUtils.clamp(wrap(Math.atan2(tmp.x, tmp.z) - m.yaw), -1.1, 1.1);
-    const lookPitch = THREE.MathUtils.clamp(-Math.atan2(tmp.y, Math.hypot(tmp.x, tmp.z)), -0.55, 0.45);
+    // Look toward the camera, pulled toward wherever the visitor's cursor is.
+    tmp.set(camera.position.x - cs.x, camera.position.y - HEAD_HEIGHT, camera.position.z - cs.z);
+    const lk = look.current;
+    const ly = wrap(Math.atan2(tmp.x, tmp.z) - m.yaw) + world.pointer.x * 0.55;
+    const lp = -Math.atan2(tmp.y, Math.hypot(tmp.x, tmp.z)) + world.pointer.y * 0.3;
+    const ease = Math.min(delta * 3, 1);
+    lk.x += (THREE.MathUtils.clamp(ly, -1.1, 1.1) - lk.x) * ease;
+    lk.y += (THREE.MathUtils.clamp(lp, -0.55, 0.45) - lk.y) * ease;
 
     driver.update({
       time: state.clock.elapsedTime,
       delta,
-      walk: m.walk,
-      phase: m.phase,
-      action,
-      lookYaw,
-      lookPitch,
+      walk: cs.walk,
+      phase: cs.phase,
+      action: cs.action,
+      lookYaw: lk.x,
+      lookPitch: lk.y,
       pulse: world.pulse,
     });
   });
@@ -180,7 +168,7 @@ const Character = () => {
   return (
     <>
       <group ref={group}>{driver && <primitive object={driver.root} />}</group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.004, 0]} renderOrder={1}>
+      <mesh ref={shadow} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.004, 0]} renderOrder={1}>
         <planeGeometry args={[1.4, 1.4]} />
         <meshBasicMaterial map={shadowTex} transparent depthWrite={false} />
       </mesh>

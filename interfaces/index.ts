@@ -8,24 +8,6 @@ export interface SocialLink extends Link {
   icon: "github" | "linkedin" | "x" | "instagram" | "mail" | "phone";
 }
 
-/** A step in an engineering flow diagram. */
-export interface FlowStep {
-  label: string;
-  kind?: "source" | "queue" | "store" | "service" | "client" | "check";
-}
-
-export interface SystemFlow {
-  title: string;
-  caption: string;
-  steps: FlowStep[];
-}
-
-export interface Engagement {
-  name: string;
-  context?: string;
-  flow?: SystemFlow;
-}
-
 export interface ExperienceItem {
   company: string;
   role: string;
@@ -33,7 +15,6 @@ export interface ExperienceItem {
   start: string;
   end: string;
   highlights: string[];
-  engagements?: Engagement[];
 }
 
 export interface Collaboration {

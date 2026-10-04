@@ -1,19 +1,23 @@
 "use client";
 
-import { useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { createPortal, useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { Reflector } from "three/examples/jsm/objects/Reflector.js";
 
 import { WORLDS } from "@/lib/themes";
-import { useWorld } from "@/lib/useWorld";
-import { world } from "@/lib/world";
+import { on, world } from "@/lib/world";
 
-import DuskSet from "./sets/DuskSet";
-import EngineSet from "./sets/EngineSet";
-import LobbySet from "./sets/LobbySet";
+import Character from "../character/Character";
+import { compileQuietly } from "../compile";
+import { stage } from "../stage";
+import AnimeSet from "./sets/AnimeSet";
+import { paintIdle, trackPaint } from "./sets/paintQueue";
+import SpaceSet from "./sets/SpaceSet";
+import VillageSet from "./sets/VillageSet";
 
-const SETS = { lobby: LobbySet, engine: EngineSet, dusk: DuskSet };
+const SETS = { space: SpaceSet, anime: AnimeSet, village: VillageSet };
 
 const glowTexture = () => {
   const c = document.createElement("canvas");
@@ -30,31 +34,103 @@ const glowTexture = () => {
   return t;
 };
 
+interface SceneProps {
+  index: number;
+  dust: number;
+  reflections: boolean;
+}
+
 /**
- * The shared world rig: background, fog, light rig, reflective floor and dust,
- * all easing toward the active world's values, plus that world's set. The set
- * swaps while the screen is dark mid-transition; the light "comes up" on the
- * new world as the transition reveals it.
+ * One complete world in its own scene: background, fog, light rig, floor, dust,
+ * set and character. Only the current world's set is built at first; the next one
+ * follows quietly a few seconds after the visitor is in, and any other the moment a
+ * switch to it starts. Once built, a world stays mounted (so switching back never
+ * waits); the renderer draws only the current world, plus the next one while it is
+ * being revealed.
  */
-const Worlds = ({ dust, reflections }: { dust: number; reflections: boolean }) => {
-  const { scene, gl, size } = useThree();
-  const { theme } = useWorld("theme");
-  const hemi = useRef<THREE.HemisphereLight>(null);
+const WorldScene = ({ index, dust, reflections }: SceneProps) => {
+  const { gl, size, camera } = useThree();
+  const theme = WORLDS[index];
+  const s = theme.scene;
   const key = useRef<THREE.SpotLight>(null);
   const rim = useRef<THREE.DirectionalLight>(null);
-  const fill = useRef<THREE.DirectionalLight>(null);
   const dustRef = useRef<THREE.Points>(null);
+  const [built, setBuilt] = useState(() => index === world.theme);
+
+  // When to build this world's set (mirrors when its character loads).
+  useEffect(() => {
+    if (built) return;
+    let preload = 0;
+    const build = () => setBuilt(true);
+    const check = () => {
+      window.clearTimeout(preload);
+      if (index === world.theme || (world.transition && world.pendingTheme === index)) return build();
+      if (!world.entered || index !== (world.theme + 1) % WORLDS.length) return;
+      preload = window.setTimeout(() => {
+        const idle = (window as Window & { requestIdleCallback?: (cb: () => void, o: { timeout: number }) => void }).requestIdleCallback;
+        if (idle) idle(build, { timeout: 1500 });
+        else build();
+      }, 3000);
+    };
+    check();
+    const offs = [on("theme", check), on("ready", check), on("transition", check)];
+    return () => {
+      window.clearTimeout(preload);
+      offs.forEach((off) => off());
+    };
+  }, [built, index]);
+
+  const scene = useMemo(() => {
+    const sc = new THREE.Scene();
+    sc.background = new THREE.Color(s.background);
+    sc.fog = new THREE.Fog(s.fog[0], s.fog[1], s.fog[2]);
+    // The shared environment map arrives once built (see Worlds); worlds wait for it before compiling.
+    sc.environment = stage.env;
+    sc.environmentIntensity = 0.32;
+    return sc;
+  }, [s]);
+
+  useEffect(() => {
+    stage.scenes[index] = scene;
+    return () => {
+      stage.scenes[index] = null;
+      world.compiledWorlds.delete(index);
+    };
+  }, [index, scene]);
+
+  // Prepare the world once its set is built, so no frame of it ever stalls on setup: let its
+  // textures finish painting, compile its shaders (in the background where the browser can),
+  // then draw it once into a tiny offscreen buffer, which uploads its textures and sets up
+  // anything else a first draw would. Nothing draws the world until this is done; its
+  // character prepares itself the same way when it arrives (see Character).
+  useEffect(() => {
+    if (!built) return;
+    let alive = true;
+    // A beat later, so the set that was just mounted is actually in the scene.
+    const timer = window.setTimeout(async () => {
+      await paintIdle();
+      if (!alive || !(await compileQuietly(gl, scene, camera, null, () => alive))) return;
+      const probe = new THREE.WebGLRenderTarget(32, 32, { type: THREE.HalfFloatType });
+      const before = gl.getRenderTarget();
+      gl.setRenderTarget(probe);
+      gl.render(scene, camera);
+      gl.setRenderTarget(before);
+      probe.dispose();
+      world.compiledWorlds.add(index);
+    }, 50);
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+    };
+  }, [built, gl, camera, index, scene]);
 
   const res = useMemo(() => {
-    const s0 = WORLDS[world.theme].scene;
-    const background = new THREE.Color(s0.background);
-    const fog = new THREE.Fog(s0.fog[0], s0.fog[1], s0.fog[2]);
     const floorMat = new THREE.MeshStandardMaterial({
-      color: s0.floor.color,
-      roughness: s0.floor.roughness,
-      metalness: s0.floor.metalness,
-      transparent: true,
-      opacity: 1,
+      color: s.floor.color,
+      roughness: s.floor.roughness,
+      metalness: s.floor.metalness,
+      transparent: reflections && s.floor.reflect > 0,
+      opacity: reflections ? 1 - s.floor.reflect : 1,
       envMapIntensity: 0.6,
     });
     const floorGeo = new THREE.CircleGeometry(40, 64);
@@ -69,7 +145,7 @@ const Worlds = ({ dust, reflections }: { dust: number; reflections: boolean }) =
     dustGeo.setAttribute("position", new THREE.BufferAttribute(p, 3));
     const dustMat = new THREE.PointsMaterial({
       map: glow,
-      color: s0.dust,
+      color: s.dust,
       size: 0.05,
       sizeAttenuation: true,
       transparent: true,
@@ -77,12 +153,23 @@ const Worlds = ({ dust, reflections }: { dust: number; reflections: boolean }) =
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     });
-    return { background, fog, floorMat, floorGeo, glow, dustGeo, dustMat };
-  }, [dust]);
+    return { floorMat, floorGeo, glow, dustGeo, dustMat };
+  }, [dust, reflections, s]);
 
-  // Mirror under the glossy floor (high tier): the character and set reflect, as on polished stone.
+  useEffect(
+    () => () => {
+      res.floorMat.dispose();
+      res.floorGeo.dispose();
+      res.glow.dispose();
+      res.dustGeo.dispose();
+      res.dustMat.dispose();
+    },
+    [res]
+  );
+
+  // Mirror under a glossy floor (high tier): the character and set reflect, as on polished stone.
   const mirror = useMemo(() => {
-    if (!reflections) return null;
+    if (!reflections || s.floor.reflect <= 0) return null;
     const pr = Math.min(gl.getPixelRatio(), 1.5);
     const r = new Reflector(new THREE.CircleGeometry(40, 64), {
       textureWidth: Math.round(size.width * pr * 0.5),
@@ -92,7 +179,7 @@ const Worlds = ({ dust, reflections }: { dust: number; reflections: boolean }) =
     r.rotation.x = -Math.PI / 2;
     r.position.y = -0.002;
     return r;
-  }, [reflections, gl, size.width, size.height]);
+  }, [reflections, s, gl, size.width, size.height]);
 
   useEffect(
     () => () => {
@@ -104,19 +191,6 @@ const Worlds = ({ dust, reflections }: { dust: number; reflections: boolean }) =
   );
 
   useEffect(() => {
-    scene.background = res.background;
-    scene.fog = res.fog;
-    return () => {
-      scene.fog = null;
-      res.floorMat.dispose();
-      res.floorGeo.dispose();
-      res.glow.dispose();
-      res.dustGeo.dispose();
-      res.dustMat.dispose();
-    };
-  }, [res, scene]);
-
-  useEffect(() => {
     const k = key.current;
     if (!k) return;
     k.target.position.set(0, 1.1, 0);
@@ -126,46 +200,13 @@ const Worlds = ({ dust, reflections }: { dust: number; reflections: boolean }) =
     };
   }, [scene]);
 
-  const tmp = useMemo(() => ({ c: new THREE.Color(), v: new THREE.Vector3() }), []);
-
   useFrame((state, delta) => {
-    const s = WORLDS[world.theme].scene;
-    const k = world.reduced ? 1 : 1 - Math.exp(-delta * 2.4);
+    const shown = world.theme === index || (world.transition && world.pendingTheme === index);
+    if (!shown) return;
+    const k = 1 - Math.exp(-delta * 4);
     const level = world.audioLevel;
-    world.pulse = Math.max(0, world.pulse - delta * 1.8);
-
-    res.background.lerp(tmp.c.set(s.background), k);
-    res.fog.color.lerp(tmp.c.set(s.fog[0]), k);
-    res.fog.near += (s.fog[1] - res.fog.near) * k;
-    res.fog.far += (s.fog[2] - res.fog.far) * k;
-    gl.toneMappingExposure += (s.exposure - gl.toneMappingExposure) * k;
-
-    if (hemi.current) {
-      hemi.current.color.lerp(tmp.c.set(s.hemi[0]), k);
-      hemi.current.groundColor.lerp(tmp.c.set(s.hemi[1]), k);
-      hemi.current.intensity += (s.hemi[2] - hemi.current.intensity) * k;
-    }
-    if (key.current) {
-      key.current.color.lerp(tmp.c.set(s.key.color), k);
-      key.current.intensity += (s.key.intensity + level * 18 - key.current.intensity) * k;
-      key.current.position.lerp(tmp.v.set(...s.key.position), k);
-    }
-    if (rim.current) {
-      rim.current.color.lerp(tmp.c.set(s.rim.color), k);
-      rim.current.intensity += (s.rim.intensity + level * 1.4 + world.pulse * 0.8 - rim.current.intensity) * k;
-    }
-    if (fill.current) {
-      fill.current.color.lerp(tmp.c.set(s.fill.color), k);
-      fill.current.intensity += (s.fill.intensity - fill.current.intensity) * k;
-    }
-    const f = res.floorMat;
-    f.color.lerp(tmp.c.set(s.floor.color), k);
-    f.roughness += (s.floor.roughness - f.roughness) * k;
-    f.metalness += (s.floor.metalness - f.metalness) * k;
-    const targetOpacity = mirror ? 1 - s.floor.reflect : 1;
-    f.opacity += (targetOpacity - f.opacity) * k;
-    res.dustMat.color.lerp(tmp.c.set(s.dust), k);
-
+    if (key.current) key.current.intensity += (s.key.intensity + level * 18 - key.current.intensity) * k;
+    if (rim.current) rim.current.intensity += (s.rim.intensity + level * 1.4 + world.pulse * 0.8 - rim.current.intensity) * k;
     const d = dustRef.current;
     if (d && !world.reduced) {
       d.rotation.y = state.clock.elapsedTime * 0.01;
@@ -173,20 +214,67 @@ const Worlds = ({ dust, reflections }: { dust: number; reflections: boolean }) =
     }
   });
 
-  const Set = SETS[WORLDS[theme].id];
+  const Set = SETS[theme.id];
+
+  return createPortal(
+    <>
+      <hemisphereLight args={[s.hemi[0], s.hemi[1], s.hemi[2]]} />
+      <spotLight ref={key} position={s.key.position} angle={0.55} penumbra={0.9} decay={2} distance={22} intensity={s.key.intensity} color={s.key.color} />
+      <directionalLight ref={rim} position={[-3, 4.5, -5]} intensity={s.rim.intensity} color={s.rim.color} />
+      <directionalLight position={[4, 2, -3]} intensity={s.fill.intensity} color={s.fill.color} />
+
+      {mirror && <primitive object={mirror} />}
+      {!s.floor.hidden && <mesh geometry={res.floorGeo} material={res.floorMat} rotation={[-Math.PI / 2, 0, 0]} receiveShadow />}
+      <points ref={dustRef} geometry={res.dustGeo} material={res.dustMat} />
+
+      {built && <Set />}
+      <Character index={index} />
+    </>,
+    scene
+  );
+};
+
+/**
+ * Image-based lighting: warm, low intensity, so metals read as metal. Built once, in the
+ * background: the room's shaders compile quietly first, so the bake itself is quick. The
+ * worlds don't compile (or draw) until it is in, as it changes their shaders (paintIdle).
+ */
+const useEnvironment = (gl: THREE.WebGLRenderer) => {
+  // (Runs before any world's preparation looks at paintIdle: theirs waits a beat first.)
+  useEffect(() => {
+    let alive = true;
+    const room = new RoomEnvironment();
+    // In a task of its own, not the one that just built the first world.
+    const job = new Promise((r) => window.setTimeout(r, 0))
+      .then(() => compileQuietly(gl, room, new THREE.PerspectiveCamera(90, 1, 0.1, 100), null, () => alive, false, THREE.LinearSRGBColorSpace))
+      .then((ok) => {
+        if (ok && alive) {
+          const pmrem = new THREE.PMREMGenerator(gl);
+          stage.env = pmrem.fromScene(room, 0.04).texture;
+          pmrem.dispose();
+          stage.scenes.forEach((sc) => sc && (sc.environment = stage.env));
+        }
+        room.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
+      });
+    trackPaint(job);
+    return () => {
+      alive = false;
+      stage.env?.dispose();
+      stage.env = null;
+    };
+  }, [gl]);
+};
+
+/** The three worlds, sharing one studio environment map for reflections. */
+const Worlds = ({ dust, reflections }: { dust: number; reflections: boolean }) => {
+  const { gl } = useThree();
+  useEnvironment(gl);
 
   return (
     <>
-      <hemisphereLight ref={hemi} args={["#7a6446", "#0a0806", 0.3]} />
-      <spotLight ref={key} position={[2.6, 5.4, 4.2]} angle={0.55} penumbra={0.9} decay={2} distance={22} intensity={55} color="#fff1e0" />
-      <directionalLight ref={rim} position={[-3, 4.5, -5]} intensity={2.4} color="#c9955a" />
-      <directionalLight ref={fill} position={[4, 2, -3]} intensity={0.7} color="#9c7443" />
-
-      {mirror && <primitive object={mirror} />}
-      <mesh geometry={res.floorGeo} material={res.floorMat} rotation={[-Math.PI / 2, 0, 0]} receiveShadow />
-      <points ref={dustRef} geometry={res.dustGeo} material={res.dustMat} />
-
-      <Set key={theme} />
+      {WORLDS.map((w, i) => (
+        <WorldScene key={w.id} index={i} dust={dust} reflections={reflections} />
+      ))}
     </>
   );
 };

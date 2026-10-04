@@ -17,6 +17,17 @@ interface FeedItem extends BlogItem {
 const FEED = "https://api.rss2json.com/v1/api.json?rss_url=https://medium.com/feed/@logii";
 const MEDIUM = "https://medium.com/@logii";
 
+/** The feed comes through a third-party proxy: only plain web links are trusted (no javascript:, data: …). */
+const safeUrl = (value?: string) => {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 const BlogList = () => {
   const [blogs, setBlogs] = useState<BlogItem[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -28,11 +39,13 @@ const BlogList = () => {
       .then((data: { items?: FeedItem[] }) => {
         if (!alive) return;
         setBlogs(
-          (data.items ?? []).map((item) => ({
-            ...item,
+          (data.items ?? []).flatMap((item) => {
+            const link = safeUrl(item.link);
+            if (!link) return [];
             // Medium often omits the thumbnail field; fall back to the first image in the post.
-            thumbnail: item.thumbnail || item.content?.match(/<img[^>]+src="([^">]+)"/)?.[1],
-          }))
+            const thumbnail = safeUrl(item.thumbnail || item.content?.match(/<img[^>]+src="([^">]+)"/)?.[1]);
+            return [{ ...item, link, thumbnail }];
+          })
         );
       })
       .catch(() => alive && setFailed(true));
@@ -55,7 +68,7 @@ const BlogList = () => {
 
   if (!blogs) {
     return (
-      <div aria-busy="true" aria-label="Loading posts" className="grid gap-6 md:grid-cols-2">
+      <div role="status" aria-busy="true" aria-label="Loading posts" className="grid gap-6 md:grid-cols-2">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="h-80 animate-pulse rounded-2xl bg-panel/40" />
         ))}

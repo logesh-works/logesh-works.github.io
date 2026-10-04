@@ -17,15 +17,3 @@ export const disposeGroup = (root: THREE.Object3D) => {
   textures.forEach((t) => t.dispose());
 };
 
-/** Positions around the stage, skipping the front arc the camera travels through. */
-export const ring = (count: number, radius: number, frontLimit = 2) => {
-  const out: { x: number; z: number; angle: number }[] = [];
-  for (let i = 0; i < count; i++) {
-    const a = (i / count) * Math.PI * 2;
-    const x = Math.sin(a) * radius;
-    const z = -Math.cos(a) * radius;
-    if (z > frontLimit) continue;
-    out.push({ x, z, angle: a });
-  }
-  return out;
-};

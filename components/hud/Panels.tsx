@@ -4,7 +4,6 @@ import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
 
 import { collaborations, education, experience, focusAreas, origins, profile, skillLayers, toolbelt } from "@/constants";
-import type { SystemFlow } from "@/interfaces";
 import portrait from "@/public/images/me-sidelook.jpeg";
 import { setPanel } from "@/lib/world";
 
@@ -23,17 +22,6 @@ const PanelHeader = ({ icon, title }: { icon: ReactNode; title: string }) => (
       <IconClose className="h-3 w-3" />
     </button>
   </div>
-);
-
-const Flow = ({ flow }: { flow: SystemFlow }) => (
-  <ol aria-label={flow.caption} className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[0.72rem] text-fg/70">
-    {flow.steps.map((s, k) => (
-      <li key={s.label} className="flex items-center gap-2">
-        <span className={k === flow.steps.length - 1 ? "text-signal" : undefined}>{s.label}</span>
-        {k < flow.steps.length - 1 && <span aria-hidden className="text-signal/60">→</span>}
-      </li>
-    ))}
-  </ol>
 );
 
 const Phase = ({ eyebrow, title, sub, children, k }: { eyebrow: string; title: string; sub?: string; children: ReactNode; k: number }) => (
@@ -57,8 +45,6 @@ const Item = ({ title, children }: { title?: string; children: ReactNode }) => (
 /** Career timeline (the reference's roadmap modal, docs/design-spec.md §2.8). */
 export const TimelinePanel = () => {
   const [cyces, ...earlier] = experience;
-  const patterns = (cyces.engagements ?? []).filter((e) => e.flow);
-  const others = (cyces.engagements ?? []).filter((e) => !e.flow);
 
   return (
     <Overlay id="timeline" label="Career timeline">
@@ -68,20 +54,6 @@ export const TimelinePanel = () => {
           {cyces.highlights.map((h) => (
             <Item key={h}>{h}</Item>
           ))}
-          {patterns.map((e) => (
-            <Item key={e.name} title={e.name}>
-              {e.flow!.caption}.
-              <Flow flow={e.flow!} />
-            </Item>
-          ))}
-          {others.map((e) => (
-            <Item key={e.name} title={e.name}>
-              {e.context}
-            </Item>
-          ))}
-          <p className="pl-6 text-[0.7rem] leading-relaxed text-fg/45">
-            Client work is confidential: shown here as the architecture built, without client names, screens or data. Happy to go deeper in conversation.
-          </p>
         </Phase>
 
         {earlier.map((job, k) => (

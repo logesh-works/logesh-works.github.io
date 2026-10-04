@@ -8,6 +8,7 @@ import { useWorld } from "@/lib/useWorld";
 import { world } from "@/lib/world";
 
 import { shotFor } from "./cameraPath";
+import { characterState } from "./characterState";
 
 const smooth = (t: number) => t * t * (3 - 2 * t);
 /** Film offset that pushes the character away from the side the copy sits on. */
@@ -73,21 +74,29 @@ const CameraController = () => {
     // Portrait: copy sits at the bottom, so frame the character higher (not for centred shots).
     if (portrait) tmp.a.y -= 0.55 * ((s0.text === "center" ? 0 : 1) * (1 - f) + (s1.text === "center" ? 0 : 1) * f);
 
+    // Shots are framed on the character: turned to the way they're walking, and moved with them.
+    const h = characterState.heading;
+    const c = Math.cos(h);
+    const sn = Math.sin(h);
+    const turn = (v: THREE.Vector3) => v.set(v.x * c + v.z * sn + characterState.x, v.y, -v.x * sn + v.z * c + characterState.z);
+    turn(tmp.pos);
+    turn(tmp.a);
+
     if (!world.reduced) {
       tmp.right.setFromMatrixColumn(cam.matrixWorld, 0);
       tmp.pos.addScaledVector(tmp.right, world.pointer.x * 0.12);
       tmp.pos.y -= world.pointer.y * 0.06;
     }
 
-    const k = world.reduced || !init.current ? 1 : 1 - Math.exp(-delta * 2.4);
+    const k = world.reduced || !init.current ? 1 : 1 - Math.exp(-delta * 5);
     init.current = true;
     cam.position.lerp(tmp.pos, k);
-    look.current.lerp(tmp.a, world.reduced ? 1 : 1 - Math.exp(-delta * 2.8));
+    look.current.lerp(tmp.a, world.reduced ? 1 : 1 - Math.exp(-delta * 5.5));
     cam.lookAt(look.current);
 
     const side = (f < 0.5 ? s0 : s1).text;
     const film = portrait ? 0 : side === "left" ? -FILM_SHIFT : side === "right" ? FILM_SHIFT : 0;
-    const next = cam.filmOffset + (film - cam.filmOffset) * (world.reduced ? 1 : 1 - Math.exp(-delta * 2));
+    const next = cam.filmOffset + (film - cam.filmOffset) * (world.reduced ? 1 : 1 - Math.exp(-delta * 3.5));
     if (Math.abs(next - cam.filmOffset) > 0.001) {
       cam.filmOffset = next;
       cam.updateProjectionMatrix();

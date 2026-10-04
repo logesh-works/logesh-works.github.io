@@ -1,19 +1,17 @@
 /**
  * The three worlds. Switching a world changes everything together: the set, the
- * lighting and atmosphere, the character's outfit and animation style, the UI
- * accents and type treatment, and the score. Kept free of three.js so the HUD
- * and the inline boot script can use it.
+ * lighting and atmosphere, the character, the UI accents and type treatment, and
+ * the score. Kept free of three.js so the HUD and the inline boot script can use it.
  */
 
-export type WorldId = "lobby" | "engine" | "dusk";
+export type WorldId = "space" | "anime" | "village";
 
 export interface WorldTheme {
   id: WorldId;
   index: string;
   name: string;
-  tagline: string;
 
-  /** Scene atmosphere. Colours are hex strings; the stage eases between worlds. */
+  /** Scene atmosphere. Colours are hex strings. */
   scene: {
     background: string;
     fog: [string, number, number];
@@ -23,24 +21,11 @@ export interface WorldTheme {
     key: { color: string; intensity: number; position: [number, number, number] };
     rim: { color: string; intensity: number };
     fill: { color: string; intensity: number };
-    floor: { color: string; roughness: number; metalness: number; reflect: number };
+    /** `hidden`: the set brings its own ground (e.g. terrain that curves away), so the stage draws none. */
+    floor: { color: string; roughness: number; metalness: number; reflect: number; hidden?: boolean };
     dust: string;
-  };
-
-  /** Character: outfit colours and how he carries himself in this world. */
-  character: {
-    suit: string;
-    vest: string;
-    shirt: string;
-    tie: string;
-    square: string;
-    shoe: string;
-    /** Replaces the plain "idle" stance in this world. */
-    idle: "idle" | "confident" | "carry";
-    /** Walk cadence (m/s equivalent) when walking in place. */
-    walkSpeed: number;
-    /** Carries a laptop under the arm. */
-    laptop: boolean;
+    /** Darkening toward the frame edges, 0 → 1. */
+    vignette: number;
   };
 
   /** Score: chord set (MIDI), pluck scale, tempo and colour of the pad. */
@@ -56,32 +41,24 @@ export interface WorldTheme {
 
 export const WORLDS: WorldTheme[] = [
   {
-    id: "lobby",
+    id: "space",
     index: "01",
-    name: "Gold Lobby",
-    tagline: "Where the work is presented",
+    name: "Logesh",
     scene: {
-      background: "#0b0907",
-      fog: ["#0b0907", 10, 28],
-      exposure: 1.05,
-      bloom: 0.62,
-      hemi: ["#7a6446", "#0a0806", 0.3],
-      key: { color: "#ffd9a3", intensity: 60, position: [2.6, 5.4, 4.2] },
-      rim: { color: "#f0a64a", intensity: 3.2 },
-      fill: { color: "#b8773a", intensity: 0.8 },
-      floor: { color: "#0d0b09", roughness: 0.12, metalness: 0.55, reflect: 0.55 },
-      dust: "#f0c27d",
-    },
-    character: {
-      suit: "#1a1715",
-      vest: "#16130f",
-      shirt: "#efe9df",
-      tie: "#0e0d0c",
-      square: "#f3eee6",
-      shoe: "#0b0a09",
-      idle: "confident",
-      walkSpeed: 1.2,
-      laptop: false,
+      // The ruined Temple of Olympian Zeus adrift in open space: weathered marble in
+      // soft starlight, a few fires, the Milky Way and a black hole overhead. Clear,
+      // so the sky reads. The set brings its own starlight, fires and ground.
+      background: "#020308",
+      fog: ["#03040a", 60, 320],
+      exposure: 0.92,
+      bloom: 0.6,
+      vignette: 0.55,
+      hemi: ["#8496c8", "#0c0a10", 0.16],
+      key: { color: "#e6ecff", intensity: 11, position: [2.4, 6.0, 3.6] },
+      rim: { color: "#ffc48a", intensity: 2.2 },
+      fill: { color: "#8fa6e0", intensity: 0.5 },
+      floor: { color: "#020203", roughness: 0.95, metalness: 0, reflect: 0, hidden: true },
+      dust: "#c8d4f0",
     },
     music: {
       bpm: 72,
@@ -93,79 +70,29 @@ export const WORLDS: WorldTheme[] = [
       ],
       pluck: [74, 77, 79, 81, 84, 86, 89],
       padWave: "sawtooth",
-      brightness: 0.35,
+      brightness: 0.4,
       pluckRate: 0.2,
     },
   },
   {
-    id: "engine",
+    id: "village",
     index: "02",
-    name: "Engine Room",
-    tagline: "Where the systems run",
+    name: "Old Village",
     scene: {
-      background: "#05080f",
-      fog: ["#05080f", 9, 26],
-      exposure: 1.0,
-      bloom: 0.85,
-      hemi: ["#2f4e78", "#04060a", 0.34],
-      key: { color: "#a9c8ff", intensity: 48, position: [-2.4, 5.6, 4.0] },
-      rim: { color: "#f59a3c", intensity: 2.6 },
-      fill: { color: "#3f78c9", intensity: 1.1 },
-      floor: { color: "#070a10", roughness: 0.18, metalness: 0.6, reflect: 0.5 },
-      dust: "#8fb6ff",
-    },
-    character: {
-      suit: "#15161a",
-      vest: "#111216",
-      shirt: "#e9edf2",
-      tie: "#0c0d10",
-      square: "#e9edf2",
-      shoe: "#08090b",
-      idle: "idle",
-      walkSpeed: 1.4,
-      laptop: false,
-    },
-    music: {
-      bpm: 88,
-      chords: [
-        { bass: 40, pad: [59, 62, 66, 67] },
-        { bass: 36, pad: [55, 59, 62, 67] },
-        { bass: 43, pad: [59, 62, 67, 71] },
-        { bass: 38, pad: [57, 62, 66, 69] },
-      ],
-      pluck: [76, 79, 81, 83, 86, 88, 91],
-      padWave: "square",
-      brightness: 0.55,
-      pluckRate: 0.34,
-    },
-  },
-  {
-    id: "dusk",
-    index: "03",
-    name: "Dusk Studio",
-    tagline: "Where the ideas start",
-    scene: {
-      background: "#140d0b",
-      fog: ["#1a110d", 11, 30],
-      exposure: 1.12,
-      bloom: 0.5,
-      hemi: ["#e0a88c", "#1a0f0b", 0.45],
-      key: { color: "#ffc9a1", intensity: 52, position: [-3.2, 4.8, -2.4] },
-      rim: { color: "#ff9d76", intensity: 2.8 },
-      fill: { color: "#c98a73", intensity: 0.9 },
-      floor: { color: "#1c1411", roughness: 0.28, metalness: 0.35, reflect: 0.38 },
-      dust: "#ffcfae",
-    },
-    character: {
-      suit: "#1c1714",
-      vest: "#181411",
-      shirt: "#f4eee6",
-      tie: "#15110f",
-      square: "#f4eee6",
-      shoe: "#0d0b0a",
-      idle: "carry",
-      walkSpeed: 1.0,
-      laptop: true,
+      // A South Indian village deep in the night: cool moonlight, the Milky Way overhead,
+      // and only oil lamps and windows for warmth. Haze swallows the distance. The set
+      // brings its own ground, moon and lamps.
+      background: "#02030a",
+      fog: ["#070a14", 14, 62],
+      exposure: 0.95,
+      bloom: 0.55,
+      hemi: ["#5d6f9e", "#0c0906", 0.2],
+      key: { color: "#b4c4ef", intensity: 6, position: [-3.0, 4.6, 3.2] },
+      rim: { color: "#8fa6ff", intensity: 2.6 },
+      fill: { color: "#ff9a50", intensity: 0.7 },
+      floor: { color: "#3a2e22", roughness: 0.92, metalness: 0, reflect: 0, hidden: true },
+      dust: "#ffd27a",
+      vignette: 0.55,
     },
     music: {
       bpm: 64,
@@ -181,8 +108,40 @@ export const WORLDS: WorldTheme[] = [
       pluckRate: 0.14,
     },
   },
+  {
+    id: "anime",
+    index: "03",
+    name: "Mita",
+    scene: {
+      // A Shibuya-style crossing at night: neon on wet asphalt, city glow in the sky.
+      // A clean, cool-white key keeps the character crisp against the colour; magenta
+      // and cyan rims cut her out of the dark. The set brings its own street and lights.
+      background: "#030209",
+      fog: ["#07041a", 18, 80],
+      exposure: 0.82,
+      bloom: 0.8,
+      hemi: ["#5a4fc0", "#08040c", 0.16],
+      key: { color: "#fff6fb", intensity: 17, position: [-2.6, 5.8, 4.2] },
+      rim: { color: "#ff4fd8", intensity: 3.8 },
+      fill: { color: "#36d6ff", intensity: 0.8 },
+      floor: { color: "#0c0b10", roughness: 0.3, metalness: 0.1, reflect: 0, hidden: true },
+      dust: "#ff9ad5",
+      vignette: 0.6,
+    },
+    music: {
+      bpm: 88,
+      chords: [
+        { bass: 41, pad: [60, 64, 67, 72] },
+        { bass: 43, pad: [59, 62, 67, 71] },
+        { bass: 45, pad: [60, 64, 69, 72] },
+        { bass: 40, pad: [59, 64, 67, 71] },
+      ],
+      pluck: [76, 79, 81, 84, 86, 88, 91],
+      padWave: "triangle",
+      brightness: 0.6,
+      pluckRate: 0.34,
+    },
+  },
 ];
-
-export const worldById = (id: string | null | undefined) => WORLDS.find((w) => w.id === id) ?? WORLDS[0];
 
 export const WORLD_STORAGE_KEY = "lk-world";

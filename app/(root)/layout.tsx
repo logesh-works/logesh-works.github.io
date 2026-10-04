@@ -9,7 +9,7 @@ import Header from "@/components/hud/Header";
 import SiteMenu from "@/components/hud/SiteMenu";
 import SoundEngine from "@/components/hud/SoundEngine";
 import WorldBoot from "@/components/hud/WorldBoot";
-import WorldVeil from "@/components/hud/WorldVeil";
+import CursorLayer from "@/components/hud/CursorLayer";
 import { profile, socials } from "@/constants";
 
 /** One variable family for everything; the width axis gives the extended display look. */
@@ -78,14 +78,15 @@ const personJsonLd = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={archivo.variable}>
+    // suppressHydrationWarning: the inline script below adds `js`, data-booting and data-theme before hydration.
+    <html lang="en" className={archivo.variable} suppressHydrationWarning>
       <head>
         {/* Mark JS before paint: loader and reveal effects only apply when scripts run. */}
         <script
           dangerouslySetInnerHTML={{
             __html:
               "var d=document.documentElement;d.classList.add('js');if(location.pathname==='/')d.dataset.booting='1';" +
-              "var w='lobby';try{var s=localStorage.getItem('lk-world');if(s==='engine'||s==='dusk')w=s}catch(e){}d.dataset.theme=w",
+              "var w='space';try{var s=localStorage.getItem('lk-world');if(s==='anime'||s==='village')w=s}catch(e){}d.dataset.theme=w",
           }}
         />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }} />
@@ -102,8 +103,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <SoundEngine />
         <WorldBoot />
         <div id="main">{children}</div>
-        <WorldVeil />
         <div aria-hidden className="noise pointer-events-none fixed inset-0 z-[85]" />
+        <CursorLayer />
         <div aria-hidden className="vignette pointer-events-none fixed inset-0 z-[2]" />
         <Analytics />
       </body>

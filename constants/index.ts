@@ -4,7 +4,6 @@ import type {
   ExperienceItem,
   SkillLayer,
   SocialLink,
-  SystemFlow,
 } from "@/interfaces";
 
 /* ------------------------------------------------------------------ */
@@ -21,26 +20,21 @@ export const profile = {
   phoneHref: "tel:+918870310183",
   github: "https://github.com/logesh-works",
   githubUser: "logesh-works",
-  resume: "/resume.pdf",
+  linkedin: "https://www.linkedin.com/in/logeshx/",
   site: "https://logeshkumar.in",
-  /** Optional key art behind the entry screen, e.g. "/images/engineer.jpg" once the file is in /public. */
-  enterArt: null as string | null,
   summary:
-    "Full-stack developer with 3+ years of hands-on experience in freelancing, startups, and teaching, focused on system design and low-latency APIs. A polyglot programmer who adapts quickly to new tech stacks and loves architecting scalable, real-world solutions.",
-  intro: "I design distributed systems and low-latency APIs, then ship the product on top.",
-  /** Core stack surfaced on the opening screen. */
-  core: ["Python", "Django", "FastAPI", "PostgreSQL", "Redis", "RabbitMQ", "AWS"],
+    "Full-stack engineer with 3+ years of shipping production apps end to end, across startups, client work and teaching. I own a feature from the first schema to the release and the week after it: React and React Native on the front, Django and FastAPI behind, and a delivery process the team can trust.",
   statement:
-    "I design the systems that hold products together: service boundaries, low-latency APIs, event-driven pipelines and the data synchronization between them, with enough full-stack range to ship the product on top.",
+    "I take products from idea to production and keep them healthy there: scoping the work, shaping the data and API contracts, building the web and mobile clients, and owning the road to release, from reviews and deploys to the fixes after launch.",
 };
 
 export const focusAreas = [
-  { title: "System design & APIs", body: "Python, Django, FastAPI and REST services, designed for low-latency responses in production." },
-  { title: "Distributed systems", body: "Microservices, event-driven architecture, queues and background workers." },
-  { title: "Data synchronization", body: "Keeping external platforms and internal stores consistent." },
-  { title: "Full-stack delivery", body: "React and React Native clients built on the same systems." },
-  { title: "AI / NLP", body: "NLP-driven products and MCP tooling for developer workflows." },
-  { title: "Open source", body: "Publishing tools other engineers can install and use." },
+  { title: "End-to-end delivery", body: "From scoping and data model to release: one owner for the whole feature, not a hand-off chain." },
+  { title: "Production-grade backends", body: "Django, FastAPI and PostgreSQL services with clear contracts, background workers and caching where it pays." },
+  { title: "Web & mobile clients", body: "React, Next.js and React Native apps built on the same APIs, fast and accessible." },
+  { title: "Shipping & operating", body: "Docker, Nginx and AWS deploys, Git workflows and code review, and staying on call for what ships." },
+  { title: "Architecture when it matters", body: "Queues, events and microservices, used to solve a real scaling problem rather than for their own sake." },
+  { title: "AI features & open source", body: "NLP-driven features in products, and MCP tooling other engineers install and use." },
 ];
 
 /** Facts from the original About page, kept as short notes. */
@@ -54,42 +48,12 @@ export const socials: SocialLink[] = [
   { label: "GitHub", handle: "@logesh-works", href: "https://github.com/logesh-works", icon: "github" },
   { label: "LinkedIn", handle: "logeshx", href: "https://www.linkedin.com/in/logeshx/", icon: "linkedin" },
   { label: "X", handle: "@zxlogi", href: "https://x.com/zxlogi", icon: "x" },
-  { label: "Instagram", handle: "@zxlogi", href: "https://www.instagram.com/zxlogi", icon: "instagram" },
+  { label: "Instagram", handle: "@itslogesh", href: "https://www.instagram.com/itslogesh", icon: "instagram" },
 ];
 
 /* ------------------------------------------------------------------ */
 /* Experience                                                          */
 /* ------------------------------------------------------------------ */
-
-/*
- * Client work at Cyces is under confidentiality, so it appears only as the
- * architecture patterns built, never client, vendor or product names, screens or data.
- */
-const syncFlow: SystemFlow = {
-  title: "Data synchronization platform",
-  caption: "Keeping a third-party platform's data in sync with the backend",
-  steps: [
-    { label: "External platform", kind: "source" },
-    { label: "Sync", kind: "service" },
-    { label: "PostgreSQL", kind: "store" },
-    { label: "Redis", kind: "store" },
-    { label: "Celery", kind: "queue" },
-    { label: "Backend", kind: "service" },
-  ],
-};
-
-const eventFlow: SystemFlow = {
-  title: "Event-driven delivery system",
-  caption: "Order and dispatch flow across microservices",
-  steps: [
-    { label: "Order", kind: "source" },
-    { label: "RabbitMQ", kind: "queue" },
-    { label: "Microservices", kind: "service" },
-    { label: "Dispatch", kind: "service" },
-    { label: "Rider", kind: "service" },
-    { label: "React Native", kind: "client" },
-  ],
-};
 
 export const experience: ExperienceItem[] = [
   {
@@ -99,14 +63,10 @@ export const experience: ExperienceItem[] = [
     start: "Jan 2025",
     end: "Present",
     highlights: [
-      "Design, develop and optimize backend and frontend systems for business products, working with cross-functional teams on features, troubleshooting and system efficiency.",
-      "Developed and deployed 4+ scalable full-stack web apps (React, Django), reducing delivery time by 30%.",
-      "Rebuilt frontend architecture using React and optimized APIs, improving performance and UX by 45%.",
-    ],
-    engagements: [
-      { name: syncFlow.title, flow: syncFlow },
-      { name: eventFlow.title, flow: eventFlow },
-      { name: "GenEHR", context: "Healthcare AI, with BUDDI AI" },
+      "Design and build full-stack products end to end: data models and APIs on the backend, web and mobile clients on the front.",
+      "Architect backend systems that scale, using event-driven workflows, message queues, background workers, caching and data synchronization.",
+      "Tune performance across the stack, from frontend architecture to API and database queries.",
+      "Own features with cross-functional teams from scoping to release: code review, deploys, and troubleshooting in production.",
     ],
   },
   {
@@ -116,7 +76,7 @@ export const experience: ExperienceItem[] = [
     start: "Jan 2023",
     end: "Jan 2025",
     highlights: [
-      "Delivered 15+ responsive websites for clients in education, retail, and food delivery; 80% repeat clients.",
+      "Delivered 15+ responsive websites for clients across industries; 80% repeat clients.",
       "Led a 5-member freelance team; managed client onboarding, dev cycles, Git workflows, and delivery timelines.",
       "Experimented with new technologies and worked with people from different backgrounds to build products that solve real needs.",
     ],
@@ -141,14 +101,14 @@ export const collaborations: Collaboration[] = [
     role: "Developer",
     start: "2024",
     end: "2025",
-    description: "Delivered GenEHR, a system for managing health-related information in the medical field.",
+    description: "Full-stack development on healthcare software.",
   },
   {
     organisation: "CSC Education, Tamil Nadu",
     role: "Developer",
     start: "2023",
     end: "2024",
-    description: "Built an app for finance, student attendance, staff and institution operations.",
+    description: "Built internal operations software for an education institution.",
   },
 ];
 
@@ -189,6 +149,20 @@ export const award = {
 };
 
 /* ------------------------------------------------------------------ */
+/* Writing                                                             */
+/* ------------------------------------------------------------------ */
+
+export const writing = {
+  summary: "Technical writing from production work: performance, backends, tooling, and using AI well.",
+  platforms: [
+    { label: "Medium", handle: "@logii", href: "https://medium.com/@logii" },
+    { label: "Substack", handle: "@unknowncoder", href: "https://substack.com/@unknowncoder" },
+  ],
+  /** An AI assistant trained on Logesh's work, to ask about it directly. */
+  assistant: { name: "Logi", href: "https://ai.logeshkumar.in", host: "ai.logeshkumar.in" },
+};
+
+/* ------------------------------------------------------------------ */
 /* Skills, as layers of a system                                       */
 /* ------------------------------------------------------------------ */
 
@@ -220,8 +194,14 @@ export const skillLayers: SkillLayer[] = [
   {
     id: "infra",
     layer: "Infra",
-    role: "Cloud & DevOps",
-    tech: ["AWS", "Docker", "Nginx", "Kubernetes", "DigitalOcean", "Firebase", "Ubuntu"],
+    role: "Cloud, DevOps & system design",
+    tech: ["System design", "Architecture", "Infra design", "AWS", "Docker", "Kubernetes", "Nginx", "DigitalOcean", "Firebase", "Ubuntu"],
+  },
+  {
+    id: "delivery",
+    layer: "Delivery",
+    role: "Shipping & operating",
+    tech: ["Git workflows", "Code review", "Docker deploys", "AWS", "Agile delivery", "Client handover"],
   },
   {
     id: "intelligence",
@@ -272,15 +252,15 @@ export const education: EducationItem[] = [
 export const chapters = [
   { id: "top", label: "Home" },
   { id: "about", label: "About" },
-  { id: "stack", label: "Systems" },
+  { id: "stack", label: "Stack" },
   { id: "experience", label: "Experience" },
   { id: "open-source", label: "Open source" },
   { id: "research", label: "Research" },
+  { id: "writing", label: "Writing" },
   { id: "contact", label: "Contact" },
 ];
 
 export const moreLinks = [
   { label: "Writing", href: "/blog" },
   { label: "GitHub activity", href: "/activities" },
-  { label: "Memories", href: "/memories" },
 ];

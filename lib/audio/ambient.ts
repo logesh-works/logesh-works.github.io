@@ -43,6 +43,8 @@ type AccentKind = "pluck" | "beat" | "chord";
 class Ambient {
   private ctx: AudioContext | null = null;
   private master!: GainNode;
+  private muffle!: BiquadFilterNode;
+  private lowered = false;
   private analyser!: AnalyserNode;
   private padFilter!: BiquadFilterNode;
   private padBus!: GainNode;
@@ -61,6 +63,10 @@ class Ambient {
   private track: HTMLAudioElement | null = null;
   private lastOnset = 0;
   private smoothed = 0;
+  /** Bumped by every start/stop, so a stop still fading out can tell it was overtaken by a start. */
+  private generation = 0;
+  /** The licensed track couldn't be played (missing or unsupported): use the generative score. */
+  private trackFailed = false;
 
   onAccent: ((kind: AccentKind) => void) | null = null;
   onLevel: ((level: number) => void) | null = null;
@@ -71,14 +77,15 @@ class Ambient {
 
   /** Must be called from a user gesture. Safe to call repeatedly. */
   async start() {
+    this.generation++;
     if (!this.ctx) this.build();
     const ctx = this.ctx!;
     if (ctx.state !== "running") await ctx.resume();
     const now = ctx.currentTime;
     this.master.gain.cancelScheduledValues(now);
     this.master.gain.setValueAtTime(this.master.gain.value, now);
-    this.master.gain.linearRampToValueAtTime(0.9, now + 2.5);
-    if (audioConfig.track) {
+    this.master.gain.linearRampToValueAtTime(0.9, now + 0.5);
+    if (audioConfig.track && !this.trackFailed) {
       // Licensed track mode: stream the file through the same master, meter and fades.
       if (!this.track) {
         const el = new Audio(audioConfig.track.url);
@@ -90,8 +97,16 @@ class Ambient {
         ctx.createMediaElementSource(el).connect(gain).connect(this.master);
         this.track = el;
       }
-      await this.track.play();
-    } else if (this.timer === null) {
+      try {
+        await this.track.play();
+      } catch (err) {
+        // No playable file (e.g. not deployed): fall through to the generative score.
+        if ((err as DOMException)?.name !== "NotSupportedError") throw err;
+        this.trackFailed = true;
+        this.track = null;
+      }
+    }
+    if ((!audioConfig.track || this.trackFailed) && this.timer === null) {
       this.nextTime = ctx.currentTime + 0.1;
       this.timer = window.setInterval(() => this.schedule(), 50);
     }
@@ -101,11 +116,14 @@ class Ambient {
   async stop() {
     const ctx = this.ctx;
     if (!ctx) return;
+    const generation = ++this.generation;
     const now = ctx.currentTime;
     this.master.gain.cancelScheduledValues(now);
     this.master.gain.setValueAtTime(this.master.gain.value, now);
-    this.master.gain.linearRampToValueAtTime(0, now + 0.6);
-    await new Promise((r) => window.setTimeout(r, 650));
+    this.master.gain.linearRampToValueAtTime(0, now + 0.5);
+    await new Promise((r) => window.setTimeout(r, 550));
+    // Turned back on while fading out: leave it playing.
+    if (generation !== this.generation) return;
     if (this.timer !== null) window.clearInterval(this.timer);
     this.timer = null;
     this.track?.pause();
@@ -122,6 +140,16 @@ class Ambient {
 
   private filterTarget() {
     return 260 + this.mood.brightness * 900 + this.depth * 1900;
+  }
+
+  /** Muffles the music (menus and panels open) or brings it back. */
+  lower(on: boolean) {
+    this.lowered = on;
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this.muffle.frequency.cancelScheduledValues(t);
+    this.muffle.frequency.setTargetAtTime(on ? 200 : 20000, t, on ? 0.12 : 0.25);
+    this.muffle.Q.setTargetAtTime(on ? 5 : 0.7, t, 0.15);
   }
 
   /** 0 at the top of the page → 1 at the end: the pad opens up as you go deeper. */
@@ -175,7 +203,12 @@ class Ambient {
     comp.ratio.value = 3;
     this.analyser = ctx.createAnalyser();
     this.analyser.fftSize = 512;
-    this.master.connect(comp).connect(this.analyser).connect(ctx.destination);
+    // Muffle: a resonant low-pass that closes while an overlay is open, as if the music were in the next room.
+    this.muffle = ctx.createBiquadFilter();
+    this.muffle.type = "lowpass";
+    this.muffle.frequency.value = this.lowered ? 200 : 20000;
+    this.muffle.Q.value = this.lowered ? 5 : 0.7;
+    this.master.connect(this.muffle).connect(comp).connect(this.analyser).connect(ctx.destination);
 
     // Generated stereo impulse response: a long, dark hall.
     const len = ctx.sampleRate * 4.5;

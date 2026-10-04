@@ -6,7 +6,7 @@
 
 export type Quality = "high" | "medium" | "low";
 
-export type WorldEvent = "chapter" | "beats" | "ready" | "sound" | "theme" | "transition" | "panel" | "footer" | "drag" | "character";
+export type WorldEvent = "chapter" | "beats" | "ready" | "sound" | "theme" | "transition" | "panel" | "footer" | "drag" | "character" | "loaded";
 
 export type PanelId = "timeline" | "profile" | "menu" | null;
 
@@ -24,18 +24,28 @@ export const world = {
   pulse: 0,
   quality: "high" as Quality,
   reduced: false,
+  /** No 3D stage (no WebGL, software rendering, Save-Data, or the stage failed to load). */
+  static: false,
   ready: false,
   /** The character model has loaded and is on stage. */
   characterReady: false,
+  /** Worlds (indices into WORLDS) whose character has loaded. */
+  loadedWorlds: new Set<number>(),
+  /** Worlds whose shaders are compiled, so they can be drawn without a stall; a switch waits on this. */
+  compiledWorlds: new Set<number>(),
   /** The loader has finished and the visitor is in the experience. */
   entered: false,
   soundOn: false,
   /** Index into WORLDS (lib/themes.ts): character, set, light, UI and score together. */
   theme: 0,
-  /** World switch in progress: "out" = fading to black, "in" = revealing the new world. */
-  transition: null as "out" | "in" | null,
-  /** World being switched to while the transition runs. */
+  /** A world switch is under way (held, revealing, or springing back). */
+  transition: false,
+  /** World being revealed while the switch runs. */
   pendingTheme: 0,
+  /** 0 → 1 as the next world opens up from the centre of the screen during a switch. */
+  reveal: 0,
+  /** 0 → 1: how strongly the picture ripples like liquid while a switch is held. */
+  warp: 0,
   /** Overlay currently open, if any. */
   panel: null as PanelId,
   /** The footer has scrolled into view: fixed text blocks step aside. */

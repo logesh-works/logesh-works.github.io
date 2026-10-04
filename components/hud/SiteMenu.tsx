@@ -11,7 +11,7 @@ import { setPanel } from "@/lib/world";
 import { switchWorld } from "@/lib/worldSwitch";
 import { cn } from "@/lib/utils";
 
-import { IconArrow, IconClose, IconDoc } from "./icons";
+import { IconArrow, IconClose } from "./icons";
 import Overlay from "./Overlay";
 import Pill from "./Pill";
 
@@ -118,7 +118,6 @@ const SiteMenu = () => {
         <div className="relative mt-12 pt-6">
           <span aria-hidden className="rule absolute inset-x-0 top-0 h-px bg-black" />
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <Pill label="Resume" icon={<IconDoc />} href={profile.resume} external />
             <p className="t-micro text-signal">
               {profile.role} · {profile.location}
             </p>

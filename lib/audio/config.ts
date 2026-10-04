@@ -14,5 +14,5 @@ export interface TrackConfig {
 }
 
 export const audioConfig: { track: TrackConfig | null } = {
-  track: null,
+  track: { url: "/audio/ambient.mp3", volume: 0.8 },
 };

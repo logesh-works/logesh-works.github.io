@@ -41,7 +41,7 @@ const Intro = () => (
       </span>
     </h1>
 
-    <div className="mt-6 flex flex-wrap items-start justify-between gap-y-6 lg:mt-10 lg:justify-start">
+    <div className="intro-copy mt-6 flex flex-wrap items-start justify-between gap-y-6 lg:mt-10 lg:justify-start">
       <p className="t-h3 w-[140px] xs:w-[170px] lg:w-col-4" aria-label="Engineering products from ideas">
         <span className="reveal-line block overflow-hidden" style={i(0)}>
           <span>
@@ -59,18 +59,18 @@ const Intro = () => (
       </p>
       <p
         className="t-h3 mt-[18svh] w-[150px] text-right xs:w-[180px] lg:ml-[calc(var(--col)*2+var(--gutter)*3)] lg:mt-0 lg:w-col-4 lg:text-left"
-        aria-label="Designing distributed systems and low-latency APIs"
+        aria-label="Shipping production-grade apps across the stack"
       >
         <span className="reveal-line block overflow-hidden" style={i(1)}>
-          <span>Designing</span>
+          <span>Shipping</span>
         </span>
         <span className="reveal-line block overflow-hidden" style={i(2)}>
           <span>
-            <b>distributed systems</b>
+            <b>production-grade</b> apps
           </span>
         </span>
         <span className="reveal-line block overflow-hidden" style={i(3)}>
-          <span>and low-latency APIs</span>
+          <span>across the stack</span>
         </span>
       </p>
     </div>

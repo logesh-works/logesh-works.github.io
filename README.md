@@ -32,17 +32,25 @@ The canonical domain is `profile.site` in `constants/index.ts`.
 To add or reorder a stop: add a chapter in `constants` (`chapters`), a shot in
 `components/world/cameraPath.ts`, and a `Block` in `components/home/Blocks.tsx`.
 
-## Replacing the character with a sculpted model
+## Characters and worlds
 
-The current character is a code-built stand-in. To use a proper rigged model
-(one you own or have licensed):
+Each world (`lib/themes.ts`) has its own scene, set and character, configured in
+`components/world/character/config.ts` (`characterConfigs`, keyed by world id).
+Holding Space (or the switch button) reveals the next world from the centre of the
+screen; letting go early springs it back (`lib/worldSwitch.ts`, `scenes/WorldsPass.ts`).
 
-1. Export a rigged GLB (Mixamo auto-rig works) with at least `idle` and `walk` clips;
-   optional `type`, `inspect`, `present`, `lookUp`, `confident`.
-2. Compress it: `npx @gltf-transform/cli optimize in.glb public/models/engineer.glb --compress meshopt --texture-compress webp`.
-3. Set `model` in `components/world/character/config.ts` (url, scale, clip names, head bone).
+To swap a character:
 
-Walking, gaze, choreography and camera work unchanged.
+1. Compress the model: `npx @gltf-transform/cli optimize in.glb public/models/name.glb --compress meshopt --texture-compress webp --texture-size 2048`
+   (add `--simplify-ratio 0.05` for multi-million-triangle sculpts; convert FBX first with `fbx2gltf`).
+2. **Unrigged model** (straight from an image-to-3D tool): give `landmarks` (shoulder,
+   elbow, wrist, hand, hips, neck, head, knee, ankle as fractions of height) and it is
+   rigged in the browser (`character/autoRig.ts`); `armsDown` relaxes a T- or A-pose.
+3. **Rigged model** (e.g. Mixamo auto-rig, for motion-captured idles): set `clips` with
+   at least `idle`, plus `headBone`. Landmarks are then ignored.
+
+Model credits: Zeus (Tripo export), "Mita Ashley anime girl" (Sketchfab, check its
+licence for attribution), "Low-poly old man standing" (free model).
 
 ## Replacing the music
 

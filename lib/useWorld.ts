@@ -10,6 +10,9 @@ export const useWorld = (...events: WorldEvent[]) => {
   const key = events.join(",");
   useEffect(() => {
     const offs = key.split(",").map((e) => on(e as WorldEvent, bump));
+    // Catch up on anything that changed between the first render and subscribing
+    // (e.g. a deep link setting the chapter before this component was listening).
+    bump();
     return () => offs.forEach((off) => off());
   }, [key]);
   return world;

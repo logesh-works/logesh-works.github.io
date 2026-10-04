@@ -5,13 +5,13 @@ import { SectionHeading, SiteFooter } from "@/components/site";
 
 export const metadata: Metadata = {
   title: "Writing",
-  description: "Articles by Logesh Kumar, published on Medium.",
+  description: "Technical writing by Logesh Kumar, on Medium and Substack.",
 };
 
 const BlogPage = () => (
   <>
     <main className="container pb-24 pt-32 md:pt-40">
-      <SectionHeading as="h1" index="//" label="Writing" title="Blog" intro="Welcome to my blog page." />
+      <SectionHeading as="h1" index="//" label="Writing" title="Blog" intro="Technical writing from production work. Also on Substack: substack.com/@unknowncoder." />
       <BlogList />
     </main>
     <SiteFooter />

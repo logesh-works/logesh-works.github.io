@@ -4,14 +4,6 @@ import { ambient } from "./ambient";
 
 const PREF = "lk-sound";
 
-export const readSoundPref = () => {
-  try {
-    return window.localStorage.getItem(PREF);
-  } catch {
-    return null;
-  }
-};
-
 const writeSoundPref = (v: "on" | "off") => {
   try {
     window.localStorage.setItem(PREF, v);

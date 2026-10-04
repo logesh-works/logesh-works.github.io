@@ -1,16 +1,12 @@
 import type * as THREE from "three";
 
-import type { WorldTheme } from "@/lib/themes";
-
-export type Outfit = WorldTheme["character"];
-
 /**
  * The contract between the scene and whatever character model is in use.
  * The procedural stand-in and a future GLB both implement `CharacterDriver`,
  * so replacing the model never touches choreography, camera or environment code.
  */
 
-export type CharacterAction = "idle" | "confident" | "carry" | "inspect" | "present" | "type" | "lookUp";
+export type CharacterAction = "idle" | "confident" | "carry" | "inspect" | "present" | "type" | "lookUp" | "wave" | "think";
 
 export const JOINTS = [
   "hips", "spine", "neck", "head", "tail",
@@ -42,7 +38,5 @@ export interface CharacterDriver {
   /** Add this to the scene; the driver moves its own limbs, the scene moves the root. */
   root: THREE.Object3D;
   update(frame: CharacterFrame): void;
-  /** Dress the character for a world (outfit colours, props), if the model supports it. */
-  setOutfit?(outfit: Outfit): void;
   dispose(): void;
 }

@@ -1,13 +1,14 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, type CSSProperties, type ReactNode } from "react";
 
 import CopyCommand from "@/components/hud/CopyCommand";
-import { IconArrow, IconDoc, IconTimeline, IconUser } from "@/components/hud/icons";
+import { IconArrow, IconTimeline, IconUser } from "@/components/hud/icons";
 import Pill from "@/components/hud/Pill";
 import { SocialIcon } from "@/components/site";
-import { award, experience, postmanMcp, profile, skillLayers, socials } from "@/constants";
+import { award, experience, postmanMcp, profile, skillLayers, socials, writing } from "@/constants";
 import portrait from "@/public/images/me-sidelook.jpeg";
 import { useWorld } from "@/lib/useWorld";
 import { emit, nav, setPanel, world } from "@/lib/world";
@@ -81,7 +82,7 @@ const Blocks = () => {
     <div className="blocks">
       <div aria-hidden className="block-scrim" data-on={chapter !== "top" && !footer ? "" : undefined} />
 
-      <Block id="about" index={1} side="right" eyebrow="About" active={is("about")} title={["I build the", "systems behind", <b key="b">the product.</b>]}>
+      <Block id="about" index={1} side="right" eyebrow="About" active={is("about")} title={["I ship the", "whole product,", <b key="b">end to end.</b>]}>
         <p className="fade max-w-[34rem]" style={i(1)}>
           {profile.statement}
         </p>
@@ -97,11 +98,12 @@ const Blocks = () => {
         </div>
       </Block>
 
-      <Block id="stack" index={2} side="left" eyebrow="Systems" active={is("stack")} title={["Skills, arranged", <span key="s">like <b>systems.</b></span>]}>
+      <Block id="stack" index={2} side="left" eyebrow="Stack" active={is("stack")} title={["The full stack,", <b key="s">production-ready.</b>]}>
         <p className="fade" style={i(1)}>
-          Grouped by the layer of an architecture each one lives in.
+          Every layer I build, ship and run in production.
         </p>
-        <ol className="fade mt-4 hidden space-y-1.5 lg:block" style={i(2)}>
+        {/* Short desktop screens get the compact chips, so the block clears the header and toolbar. */}
+        <ol className="fade mt-4 hidden space-y-1.5 lg:block lg:[@media(max-height:820px)]:hidden" style={i(2)}>
           {skillLayers.map((l, k) => (
             <li key={l.id} className="flex gap-3 text-[0.78rem] leading-snug">
               <span className="t-label w-[5.5rem] shrink-0 pt-0.5 text-fg">
@@ -111,7 +113,7 @@ const Blocks = () => {
             </li>
           ))}
         </ol>
-        <ul className="fade mt-4 flex flex-wrap gap-1.5 lg:hidden" style={i(2)}>
+        <ul className="fade mt-4 flex flex-wrap gap-1.5 lg:hidden lg:[@media(max-height:820px)]:flex" style={i(2)}>
           {skillLayers.map((l) => (
             <li key={l.id} className="chip">
               {l.role}
@@ -171,7 +173,29 @@ const Blocks = () => {
         </p>
       </Block>
 
-      <Block id="contact" index={6} side="left" eyebrow="Contact" active={is("contact")} title={["Have a system", <b key="b">to build?</b>]}>
+      <Block id="writing" index={6} side="left" eyebrow="Writing" active={is("writing")} title={["See what", <b key="b">I&rsquo;m writing.</b>]}>
+        <p className="fade max-w-[30rem]" style={i(1)}>
+          {writing.summary}
+        </p>
+        <div className="fade mt-5 flex flex-wrap items-center gap-2.5" style={i(2)}>
+          {writing.platforms.map((p) => (
+            <Pill key={p.label} label={p.label} icon={<IconArrow />} href={p.href} external ariaLabel={`${p.label} (opens in a new tab)`} />
+          ))}
+          <Link href="/blog" className="t-label tlink ml-2 text-fg">
+            All posts
+            <IconArrow />
+          </Link>
+        </div>
+        <p className="fade mt-6 max-w-[30rem] text-[0.8rem] text-fg/60" style={i(3)}>
+          Rather ask than read? {writing.assistant.name}, my AI assistant trained on my work, answers at{" "}
+          <a href={writing.assistant.href} target="_blank" rel="noopener noreferrer" className="link-underline text-fg">
+            {writing.assistant.host}
+          </a>
+          .
+        </p>
+      </Block>
+
+      <Block id="contact" index={7} side="right" eyebrow="Contact" active={is("contact")} title={["Wanna connect", <b key="b">with me?</b>]}>
         <a href={`mailto:${profile.email}`} className="fade t-h2 link-underline mt-2 inline-block break-all !normal-case !tracking-normal text-fg" style={i(1)}>
           {profile.email}
         </a>
@@ -191,9 +215,6 @@ const Blocks = () => {
             </li>
           ))}
         </ul>
-        <div className="fade mt-6" style={i(4)}>
-          <Pill label="Download resume" icon={<IconDoc />} href={profile.resume} external solid />
-        </div>
       </Block>
     </div>
   );

@@ -8,12 +8,6 @@ export const IconArrow = ({ className }: P) => (
   </svg>
 );
 
-export const IconDoc = ({ className }: P) => (
-  <svg viewBox="0 0 16 16" className={className} aria-hidden fill="currentColor">
-    <path d="M3 0h7l4 4v12H3V0zm2 2v12h7V5H9V2H5zm1 5h5v1.5H6V7zm0 3h5v1.5H6V10z" />
-  </svg>
-);
-
 export const IconTimeline = ({ className }: P) => (
   <svg viewBox="0 0 16 16" className={className} aria-hidden fill="currentColor">
     <circle cx="3" cy="3" r="2" />
